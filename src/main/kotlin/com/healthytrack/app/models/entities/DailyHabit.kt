@@ -7,11 +7,18 @@ import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
 
+import jakarta.persistence.FetchType
+import jakarta.persistence.JoinColumn
+import jakarta.persistence.ManyToOne
+import com.fasterxml.jackson.annotation.JsonIgnore
+
 @Entity
 @Table(name = "daily_habits")
 data class DailyHabit(
-    @Column(name = "user_id", nullable = false)
-    val userId: Long,
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
+    val user: User,
 
     @Column(nullable = false)
     val date: LocalDate,

@@ -10,6 +10,15 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
+    @ExceptionHandler(NoSuchElementException::class)
+    fun handleNoSuchElementException(
+        ex: NoSuchElementException
+    ): ResponseEntity<ErrorResponse> {
+        return ResponseEntity(
+            ErrorResponse(ex.message),
+            HttpStatus.NOT_FOUND
+        )
+    }
 
     @ExceptionHandler(DailyHabitNotFoundException::class)
     fun handleDailyHabitNotFoundException(

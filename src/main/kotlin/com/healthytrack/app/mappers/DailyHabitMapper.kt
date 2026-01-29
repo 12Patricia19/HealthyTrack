@@ -1,6 +1,7 @@
 package com.healthytrack.app.mappers
 
 import com.healthytrack.app.models.entities.DailyHabit
+import com.healthytrack.app.models.entities.User
 import com.healthytrack.app.models.requests.DailyHabitRequest
 import com.healthytrack.app.models.responses.DailyHabitResponse
 import org.springframework.stereotype.Component
@@ -9,9 +10,9 @@ import java.time.LocalDateTime
 @Component
 class DailyHabitMapper {
     
-    fun toEntity(request: DailyHabitRequest): DailyHabit {
+    fun toEntity(request: DailyHabitRequest, user: User): DailyHabit {
         return DailyHabit(
-            userId = request.userId,
+            user = user,
             date = request.date,
             timestamp = LocalDateTime.now(),
             habitType = request.habitType,
@@ -26,7 +27,7 @@ class DailyHabitMapper {
     fun toResponse(dailyHabit: DailyHabit): DailyHabitResponse {
         return DailyHabitResponse(
             id = dailyHabit.id,
-            userId = dailyHabit.userId,
+            userId = dailyHabit.user.id,
             date = dailyHabit.date,
             timestamp = dailyHabit.timestamp,
             habitType = dailyHabit.habitType,

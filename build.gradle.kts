@@ -6,6 +6,19 @@ plugins {
 	kotlin("jvm") version "1.9.21"
 	kotlin("plugin.spring") version "1.9.21"
 	kotlin("plugin.jpa") version "1.9.21"
+	jacoco
+}
+// JaCoCo config
+jacoco {
+	toolVersion = "0.8.11"
+}
+
+tasks.jacocoTestReport {
+	dependsOn(tasks.test)
+	reports {
+		xml.required.set(true)
+		html.required.set(true)
+	}
 }
 
 group = "com.healthytrack"
@@ -31,10 +44,11 @@ dependencies {
 	implementation("org.jetbrains.kotlin:kotlin-stdlib")
 
 	// Database
-	runtimeOnly("com.h2database:h2")
+	runtimeOnly("org.postgresql:postgresql:42.7.1")
 
 	// Testing
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
+	testImplementation("io.mockk:mockk:1.13.10")
 }
 
 tasks.withType<KotlinCompile> {

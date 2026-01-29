@@ -1,3 +1,4 @@
+// ...existing code...
 package com.healthytrack.app.services
 
 import com.healthytrack.app.exceptions.DailyHabitNotFoundException
@@ -6,13 +7,15 @@ import com.healthytrack.app.mappers.DailyHabitMapper
 import com.healthytrack.app.models.requests.DailyHabitRequest
 import com.healthytrack.app.models.responses.DailyHabitResponse
 import com.healthytrack.app.repositories.DailyHabitRepository
+import com.healthytrack.app.repositories.UserRepository
 import org.springframework.stereotype.Service
 import java.time.LocalDate
 
 @Service
 class DailyHabitService(
     private val dailyHabitRepository: DailyHabitRepository,
-    private val dailyHabitMapper: DailyHabitMapper
+    private val dailyHabitMapper: DailyHabitMapper,
+    private val userRepository: UserRepository
 ) {
 
     private val validHabitTypes = listOf(
@@ -23,15 +26,20 @@ class DailyHabitService(
         "mindfulness"
     )
 
+
     fun save(request: DailyHabitRequest): DailyHabitResponse {
         // Validar tipo de hábito
         if (request.habitType !in validHabitTypes) {
             throw InvalidHabitTypeException(
-                "Tipo de hábito inválido. Debe ser uno de: ${validHabitTypes.joinToString(", ")}"
+                "Tipo de hábito inválido. Debe ser uno de: ${validHabitTypes.joinToString(", ")}" 
             )
         }
 
-        val entity = dailyHabitMapper.toEntity(request)
+        // Obtener usuario
+        val user = userRepository.findById(request.userId)
+            .orElseThrow { NoSuchElementException("User with id ${request.userId} not found") }
+
+        val entity = dailyHabitMapper.toEntity(request, user)
         val savedHabit = dailyHabitRepository.save(entity)
         return dailyHabitMapper.toResponse(savedHabit)
     }
@@ -69,8 +77,12 @@ class DailyHabitService(
             )
         }
 
+        // Obtener usuario
+        val user = userRepository.findById(request.userId)
+            .orElseThrow { NoSuchElementException("User with id ${request.userId} not found") }
+
         // Crear nueva entidad con el ID existente
-        val updatedEntity = dailyHabitMapper.toEntity(request).apply {
+        val updatedEntity = dailyHabitMapper.toEntity(request, user).apply {
             this.id = existingHabit.id
         }
 

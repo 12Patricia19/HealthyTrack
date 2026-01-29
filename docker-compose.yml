@@ -1,0 +1,15 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:16
+    container_name: healthytrack_db
+    environment:
+      POSTGRES_USER: healthyuser
+      POSTGRES_PASSWORD: healthypass
+      POSTGRES_DB: healthytrack
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+volumes:
+  db_data:
