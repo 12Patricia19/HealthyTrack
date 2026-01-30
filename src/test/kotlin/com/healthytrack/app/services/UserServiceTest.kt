@@ -1,15 +1,16 @@
+
 package com.healthytrack.app.services
 
 import com.healthytrack.app.mappers.UserMapper
 import com.healthytrack.app.models.entities.User
 import com.healthytrack.app.models.requests.UserRequest
+import com.healthytrack.app.models.responses.UserResponse
 import com.healthytrack.app.repositories.UserRepository
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.verify
+import io.mockk.*
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.time.LocalDateTime
 import java.util.*
 
 class UserServiceTest {
@@ -20,30 +21,44 @@ class UserServiceTest {
     @BeforeEach
     fun setUp() {
         userRepository = mockk(relaxed = true)
-        userMapper = UserMapper()
+        userMapper = mockk(relaxed = true)
         userService = UserService(userRepository, userMapper)
     }
 
     @Test
     fun `create user successfully`() {
         val request = UserRequest("John", "Doe", "john@example.com")
-        val entity = userMapper.toEntity(request)
+        val entity = User("John", "Doe", "john@example.com")
         entity.id = 1
-        every { userRepository.save(any()) } returns entity
-        val response = userService.create(request)
-        assertEquals("John", response.firstName)
-        assertEquals("Doe", response.lastName)
-        assertEquals("john@example.com", response.email)
+        val response = UserResponse(1, "John", "Doe", "john@example.com", LocalDateTime.now(), LocalDateTime.now())
+        every { userMapper.toEntity(request) } returns entity
+        every { userRepository.save(entity) } returns entity
+        every { userMapper.toResponse(entity) } returns response
+        val result = userService.create(request)
+        assertEquals(response, result)
+    }
+
+    @Test
+    fun `findAll returns all users`() {
+        val entity = User("Jane", "Smith", "jane@example.com")
+        entity.id = 2
+        val response = UserResponse(2, "Jane", "Smith", "jane@example.com", LocalDateTime.now(), LocalDateTime.now())
+        every { userRepository.findAll() } returns listOf(entity)
+        every { userMapper.toResponse(entity) } returns response
+        val result = userService.findAll()
+        assertEquals(1, result.size)
+        assertEquals(response, result[0])
     }
 
     @Test
     fun `find user by id success`() {
         val entity = User("Jane", "Smith", "jane@example.com")
         entity.id = 2
+        val response = UserResponse(2, "Jane", "Smith", "jane@example.com", LocalDateTime.now(), LocalDateTime.now())
         every { userRepository.findById(2) } returns Optional.of(entity)
-        val response = userService.findById(2)
-        assertEquals(2, response.id)
-        assertEquals("Jane", response.firstName)
+        every { userMapper.toResponse(entity) } returns response
+        val result = userService.findById(2)
+        assertEquals(response, result)
     }
 
     @Test
@@ -59,12 +74,12 @@ class UserServiceTest {
         val request = UserRequest("C", "D", "c@d.com")
         val updated = User("C", "D", "c@d.com")
         updated.id = 3
+        val response = UserResponse(3, "C", "D", "c@d.com", LocalDateTime.now(), LocalDateTime.now())
         every { userRepository.findById(3) } returns Optional.of(entity)
         every { userRepository.save(any()) } returns updated
-        val response = userService.update(3, request)
-        assertEquals("C", response.firstName)
-        assertEquals("D", response.lastName)
-        assertEquals("c@d.com", response.email)
+        every { userMapper.toResponse(updated) } returns response
+        val result = userService.update(3, request)
+        assertEquals(response, result)
     }
 
     @Test
@@ -77,13 +92,13 @@ class UserServiceTest {
     @Test
     fun `delete user success`() {
         every { userRepository.existsById(5) } returns true
-        every { userRepository.deleteById(5) } returns Unit
+        every { userRepository.deleteById(5) } just Runs
         userService.delete(5)
         verify { userRepository.deleteById(5) }
     }
 
     @Test
-    fun `delete user not found`() {
+    fun `delete user not found throws`() {
         every { userRepository.existsById(6) } returns false
         assertThrows(NoSuchElementException::class.java) { userService.delete(6) }
     }
