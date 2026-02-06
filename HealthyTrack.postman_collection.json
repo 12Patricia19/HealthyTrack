@@ -275,7 +275,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"userId\": 1,\n  \"date\": \"2025-12-12\",\n  \"habitType\": \"agua\",\n  \"value\": 250.00,\n  \"unit\": \"ml\",\n  \"description\": \"Vaso de agua en ayunas\",\n  \"notes\": \"Primera ingesta del día\",\n  \"entryMethod\": \"manual\"\n}"
+              "raw": "{\n  \"user_id\": 1,\n  \"date\": \"2025-12-12\",\n  \"habit_type\": \"agua\",\n  \"value\": 250.00,\n  \"unit\": \"ml\",\n  \"description\": \"Vaso de agua en ayunas\",\n  \"notes\": \"Primera ingesta del día\",\n  \"entry_method\": \"manual\"\n}"
             },
             "url": {
               "raw": "http://localhost:8080/api/daily-habits",
