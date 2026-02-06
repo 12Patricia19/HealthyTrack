@@ -1,16 +1,19 @@
 package com.healthytrack.app.models.requests
 
+import com.fasterxml.jackson.annotation.JsonAlias
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.math.BigDecimal
 import java.time.LocalDate
 
 data class DailyHabitRequest(
     @JsonProperty("user_id")
+    @JsonAlias("userId")
     val userId: Long,
 
     val date: LocalDate,
 
     @JsonProperty("habit_type")
+    @JsonAlias("habitType")
     val habitType: String,
 
     val value: BigDecimal? = null,
@@ -22,5 +25,6 @@ data class DailyHabitRequest(
     val notes: String? = null,
 
     @JsonProperty("entry_method")
+    @JsonAlias("entryMethod")
     val entryMethod: String? = "manual"
 )

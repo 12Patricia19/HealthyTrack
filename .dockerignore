@@ -1,0 +1,41 @@
+# Dockerignore para el Backend
+
+# Build outputs
+build/
+*.jar
+*.war
+*.class
+
+# Gradle
+.gradle/
+gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Logs
+*.log
+
+# Frontend
+front-end/
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Tests
+*.test
+test-results/
