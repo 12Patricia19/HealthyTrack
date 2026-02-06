@@ -1,3 +1,8 @@
+# Expo
+.expo/
+.expo-shared/
+web-build/
+
 # Dependencies
 node_modules/
 /.pnp
@@ -10,8 +15,8 @@ node_modules/
 /dist
 /build
 
-# Misc
-.DS_Store
+# Environment
+.env
 .env.local
 .env.development.local
 .env.test.local
@@ -34,6 +39,15 @@ lerna-debug.log*
 *.sln
 *.sw?
 
-# Vite
+# OS
+.DS_Store
+Thumbs.db
+
+# Build 
+*.apk
+*.aab
+*.ipa
+
+# Vite (obsoleto pero se mantiene)
 dist-ssr
 *.local

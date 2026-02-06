@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "HealthyTrack",
+    "slug": "healthytrack",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.healthytrack.app"
+    },
+    "android": {
+      "package": "com.healthytrack.app"
+    },
+    "extra": {
+      "apiUrl": "http://10.0.2.2:8080/api"
+    }
+  }
+}

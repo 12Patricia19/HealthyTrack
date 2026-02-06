@@ -1,4 +1,15 @@
 import { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 import dailyHabitService from '../services/dailyHabitService';
 import userService from '../services/userService';
 
@@ -26,10 +37,12 @@ function DailyHabits() {
     { value: 'sueño', label: 'Sueño' },
     { value: 'mindfulness', label: 'Mindfulness' }
   ];
+  
   const habitTypeLabels = habitTypes.reduce((acc, type) => {
     acc[type.value] = type.label;
     return acc;
   }, {});
+  
   const units = {
     agua: ['ml', 'l'],
     actividad_fisica: ['minutos', 'horas'],
@@ -59,14 +72,12 @@ function DailyHabits() {
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
+  const handleInputChange = (name, value) => {
+    setFormData(prev => ({
+      ...prev,
       [name]: value
-    });
+    }));
     
-    // Actualizar unidad cuando cambia el tipo de hábito
     if (name === 'habitType') {
       const nextUnit = units[value]?.[0] || '';
       setFormData(prev => ({
@@ -77,11 +88,15 @@ function DailyHabits() {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     try {
       setError(null);
       setSuccess(null);
+      
+      if (!formData.userId || !formData.value) {
+        setError('Por favor complete todos los campos requeridos');
+        return;
+      }
       
       const habitData = {
         ...formData,
@@ -110,19 +125,28 @@ function DailyHabits() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('¿Está seguro de eliminar este hábito?')) {
-      return;
-    }
-    
-    try {
-      setError(null);
-      setSuccess(null);
-      await dailyHabitService.deleteDailyHabit(id);
-      setSuccess('Hábito eliminado correctamente');
-      loadData();
-    } catch (err) {
-      setError('Error al eliminar hábito: ' + (err.response?.data?.message || err.message));
-    }
+    Alert.alert(
+      'Confirmar eliminación',
+      '¿Está seguro de eliminar este hábito?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setError(null);
+              setSuccess(null);
+              await dailyHabitService.deleteDailyHabit(id);
+              setSuccess('Hábito eliminado correctamente');
+              loadData();
+            } catch (err) {
+              setError('Error al eliminar hábito: ' + (err.response?.data?.message || err.message));
+            }
+          }
+        }
+      ]
+    );
   };
 
   const getUserName = (userId) => {
@@ -142,196 +166,371 @@ function DailyHabits() {
   };
 
   if (loading && habits.length === 0) {
-    return <div className="loading">Cargando hábitos...</div>;
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#4CAF50" />
+        <Text style={styles.loadingText}>Cargando hábitos...</Text>
+      </View>
+    );
   }
 
   return (
-    <div>
-      <div className="section">
-        <h2>➕ Registrar Nuevo Hábito</h2>
+    <ScrollView style={styles.container}>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>➕ Registrar Nuevo Hábito</Text>
         
-        {error && <div className="error">{error}</div>}
-        {success && <div className="success">{success}</div>}
+        {error && <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View>}
+        {success && <View style={styles.successBox}><Text style={styles.successText}>{success}</Text></View>}
         
-        <form onSubmit={handleSubmit} className="form">
-          <div className="grid grid-2">
-            <div className="form-group">
-              <label htmlFor="userId">Usuario</label>
-              <select
-                id="userId"
-                name="userId"
-                value={formData.userId}
-                onChange={handleInputChange}
-                required
+        <View style={styles.form}>
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Usuario</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={formData.userId}
+                onValueChange={(value) => handleInputChange('userId', value)}
+                style={styles.picker}
               >
-                <option value="">Seleccione un usuario</option>
+                <Picker.Item label="Seleccione un usuario" value="" />
                 {users.map(user => (
-                  <option key={user.id} value={user.id}>
-                    {user.firstName} {user.lastName}
-                  </option>
+                  <Picker.Item 
+                    key={user.id} 
+                    label={`${user.firstName} ${user.lastName}`} 
+                    value={user.id.toString()} 
+                  />
                 ))}
-              </select>
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="date">Fecha</label>
-              <input
-                type="date"
-                id="date"
-                name="date"
-                value={formData.date}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-          </div>
+              </Picker>
+            </View>
+          </View>
           
-          <div className="grid grid-2">
-            <div className="form-group">
-              <label htmlFor="habitType">Tipo de Hábito</label>
-              <select
-                id="habitType"
-                name="habitType"
-                value={formData.habitType}
-                onChange={handleInputChange}
-                required
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Fecha</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.date}
+              onChangeText={(value) => handleInputChange('date', value)}
+              placeholder="YYYY-MM-DD"
+            />
+          </View>
+          
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Tipo de Hábito</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={formData.habitType}
+                onValueChange={(value) => handleInputChange('habitType', value)}
+                style={styles.picker}
               >
                 {habitTypes.map(type => (
-                  <option key={type.value} value={type.value}>
-                    {getHabitIcon(type.value)} {type.label}
-                  </option>
+                  <Picker.Item 
+                    key={type.value} 
+                    label={`${getHabitIcon(type.value)} ${type.label}`} 
+                    value={type.value} 
+                  />
                 ))}
-              </select>
-            </div>
+              </Picker>
+            </View>
+          </View>
+          
+          <View style={styles.formRow}>
+            <View style={styles.formGroupFlex}>
+              <Text style={styles.label}>Valor</Text>
+              <TextInput
+                style={styles.input}
+                value={formData.value}
+                onChangeText={(value) => handleInputChange('value', value)}
+                placeholder="0.00"
+                keyboardType="numeric"
+              />
+            </View>
             
-            <div className="form-group">
-              <label htmlFor="value">Valor</label>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <input
-                  type="number"
-                  id="value"
-                  name="value"
-                  value={formData.value}
-                  onChange={handleInputChange}
-                  required
-                  step="0.01"
-                  placeholder="0.00"
-                  style={{ flex: 1 }}
-                />
-                <select
-                  name="unit"
-                  value={formData.unit}
-                  onChange={handleInputChange}
-                  style={{ width: '100px' }}
+            <View style={styles.formGroupSmall}>
+              <Text style={styles.label}>Unidad</Text>
+              <View style={styles.pickerContainer}>
+                <Picker
+                  selectedValue={formData.unit}
+                  onValueChange={(value) => handleInputChange('unit', value)}
+                  style={styles.picker}
                 >
                   {(units[formData.habitType] || []).map(unit => (
-                    <option key={unit} value={unit}>{unit}</option>
+                    <Picker.Item key={unit} label={unit} value={unit} />
                   ))}
-                </select>
-              </div>
-            </div>
-          </div>
+                </Picker>
+              </View>
+            </View>
+          </View>
           
-          <div className="form-group">
-            <label htmlFor="description">Descripción</label>
-            <input
-              type="text"
-              id="description"
-              name="description"
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Descripción</Text>
+            <TextInput
+              style={styles.input}
               value={formData.description}
-              onChange={handleInputChange}
+              onChangeText={(value) => handleInputChange('description', value)}
               placeholder="Breve descripción del hábito"
             />
-          </div>
+          </View>
           
-          <div className="form-group">
-            <label htmlFor="notes">Notas</label>
-            <textarea
-              id="notes"
-              name="notes"
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Notas</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
               value={formData.notes}
-              onChange={handleInputChange}
+              onChangeText={(value) => handleInputChange('notes', value)}
               placeholder="Notas adicionales (opcional)"
+              multiline
+              numberOfLines={3}
             />
-          </div>
+          </View>
           
-          <div className="form-group">
-            <label htmlFor="entryMethod">Método de Registro</label>
-            <select
-              id="entryMethod"
-              name="entryMethod"
-              value={formData.entryMethod}
-              onChange={handleInputChange}
-            >
-              <option value="manual">Manual</option>
-              <option value="automatico">Automático</option>
-            </select>
-          </div>
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Método de Registro</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={formData.entryMethod}
+                onValueChange={(value) => handleInputChange('entryMethod', value)}
+                style={styles.picker}
+              >
+                <Picker.Item label="Manual" value="manual" />
+                <Picker.Item label="Automático" value="automatico" />
+              </Picker>
+            </View>
+          </View>
           
-          <button type="submit" className="btn btn-primary">
-            ➕ Registrar Hábito
-          </button>
-        </form>
-      </div>
+          <TouchableOpacity style={styles.btnPrimary} onPress={handleSubmit}>
+            <Text style={styles.btnText}>➕ Registrar Hábito</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
       
-      <div className="section">
-        <h2>📊 Hábitos Registrados ({habits.length})</h2>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>📊 Hábitos Registrados ({habits.length})</Text>
         
         {habits.length === 0 ? (
-          <div className="empty-state">
-            No hay hábitos registrados. ¡Registra el primero!
-          </div>
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>No hay hábitos registrados. ¡Registra el primero!</Text>
+          </View>
         ) : (
-          <ul className="list">
-            {habits.map((habit) => (
-              <li key={habit.id} className="list-item">
-                <div className="list-item-header">
-                  <div>
-                    <div className="list-item-title">
-                      {getHabitIcon(habit.habitType)} {habitTypeLabels[habit.habitType] || habit.habitType || 'Sin tipo'}
-                    </div>
-                    <div className="list-item-content">
-                      <span className="badge badge-primary">
-                        {habit.value} {habit.unit}
-                      </span>
-                      <span className="badge badge-secondary">
-                        {habit.date}
-                      </span>
-                      <span className="badge badge-info">
-                        👤 {getUserName(habit.userId)}
-                      </span>
-                      <br />
-                      {habit.description && (
-                        <p style={{ marginTop: '0.5rem' }}>
-                          <strong>Descripción:</strong> {habit.description}
-                        </p>
-                      )}
-                      {habit.notes && (
-                        <p style={{ marginTop: '0.25rem' }}>
-                          <strong>Notas:</strong> {habit.notes}
-                        </p>
-                      )}
-                      <p style={{ marginTop: '0.25rem', fontSize: '0.9rem', color: '#666' }}>
-                        Método: {habit.entryMethod}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="list-item-actions">
-                    <button 
-                      onClick={() => handleDelete(habit.id)} 
-                      className="btn btn-danger btn-small"
-                    >
-                      🗑️ Eliminar
-                    </button>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
+          habits.map((habit) => (
+            <View key={habit.id} style={styles.listItem}>
+              <View style={styles.listItemContent}>
+                <Text style={styles.habitTitle}>
+                  {getHabitIcon(habit.habitType)} {habitTypeLabels[habit.habitType] || habit.habitType || 'Sin tipo'}
+                </Text>
+                <View style={styles.badgeRow}>
+                  <Text style={styles.badgePrimary}>{habit.value} {habit.unit}</Text>
+                  <Text style={styles.badgeSecondary}>{habit.date}</Text>
+                  <Text style={styles.badgeInfo}>👤 {getUserName(habit.userId)}</Text>
+                </View>
+                {habit.description && (
+                  <Text style={styles.detailText}>
+                    <Text style={styles.bold}>Descripción:</Text> {habit.description}
+                  </Text>
+                )}
+                {habit.notes && (
+                  <Text style={styles.detailText}>
+                    <Text style={styles.bold}>Notas:</Text> {habit.notes}
+                  </Text>
+                )}
+                <Text style={styles.methodText}>Método: {habit.entryMethod}</Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.btnDanger} 
+                onPress={() => handleDelete(habit.id)}
+              >
+                <Text style={styles.btnSmallText}>🗑️</Text>
+              </TouchableOpacity>
+            </View>
+          ))
         )}
-      </div>
-    </div>
+      </View>
+    </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+  },
+  section: {
+    backgroundColor: '#fff',
+    margin: 10,
+    padding: 15,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    color: '#333',
+  },
+  errorBox: {
+    backgroundColor: '#ffebee',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 10,
+  },
+  errorText: {
+    color: '#c62828',
+  },
+  successBox: {
+    backgroundColor: '#e8f5e9',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 10,
+  },
+  successText: {
+    color: '#2e7d32',
+  },
+  form: {
+    marginTop: 10,
+  },
+  formGroup: {
+    marginBottom: 15,
+  },
+  formRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 15,
+  },
+  formGroupFlex: {
+    flex: 2,
+  },
+  formGroupSmall: {
+    flex: 1,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 5,
+    color: '#555',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 5,
+    padding: 10,
+    fontSize: 16,
+    backgroundColor: '#fff',
+  },
+  textArea: {
+    height: 80,
+    textAlignVertical: 'top',
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 5,
+    backgroundColor: '#fff',
+  },
+  picker: {
+    height: 50,
+  },
+  btnPrimary: {
+    backgroundColor: '#4CAF50',
+    padding: 12,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  btnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  emptyState: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: '#999',
+    fontSize: 16,
+  },
+  listItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  listItemContent: {
+    flex: 1,
+    paddingRight: 10,
+  },
+  habitTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 5,
+    marginBottom: 5,
+  },
+  badgePrimary: {
+    backgroundColor: '#4CAF50',
+    color: '#fff',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    fontSize: 12,
+  },
+  badgeSecondary: {
+    backgroundColor: '#e0e0e0',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    fontSize: 12,
+  },
+  badgeInfo: {
+    backgroundColor: '#2196F3',
+    color: '#fff',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    fontSize: 12,
+  },
+  detailText: {
+    fontSize: 13,
+    color: '#555',
+    marginTop: 4,
+  },
+  bold: {
+    fontWeight: 'bold',
+  },
+  methodText: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+  },
+  btnDanger: {
+    backgroundColor: '#f44336',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 5,
+  },
+  btnSmallText: {
+    color: '#fff',
+    fontSize: 14,
+  },
+});
 
 export default DailyHabits;

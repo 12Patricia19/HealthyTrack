@@ -1,4 +1,15 @@
 import { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 import habitNoteService from '../services/habitNoteService';
 import dailyHabitService from '../services/dailyHabitService';
 
@@ -35,18 +46,22 @@ function HabitNotes() {
     }
   };
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (name, value) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     try {
       setError(null);
       setSuccess(null);
+      
+      if (!formData.dailyHabitId || !formData.note) {
+        setError('Por favor complete todos los campos');
+        return;
+      }
       
       const noteData = {
         ...formData,
@@ -72,7 +87,7 @@ function HabitNotes() {
   const handleEdit = (note) => {
     setEditingNote(note);
     setFormData({
-      dailyHabitId: note.dailyHabitId,
+      dailyHabitId: note.dailyHabitId.toString(),
       note: note.note
     });
     setError(null);
@@ -87,19 +102,28 @@ function HabitNotes() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('¿Está seguro de eliminar esta nota?')) {
-      return;
-    }
-    
-    try {
-      setError(null);
-      setSuccess(null);
-      await habitNoteService.deleteHabitNote(id);
-      setSuccess('Nota eliminada correctamente');
-      loadData();
-    } catch (err) {
-      setError('Error al eliminar nota: ' + (err.response?.data?.message || err.message));
-    }
+    Alert.alert(
+      'Confirmar eliminación',
+      '¿Está seguro de eliminar esta nota?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setError(null);
+              setSuccess(null);
+              await habitNoteService.deleteHabitNote(id);
+              setSuccess('Nota eliminada correctamente');
+              loadData();
+            } catch (err) {
+              setError('Error al eliminar nota: ' + (err.response?.data?.message || err.message));
+            }
+          }
+        }
+      ]
+    );
   };
 
   const getHabitInfo = (habitId) => {
@@ -115,153 +139,359 @@ function HabitNotes() {
   const getHabitIcon = (type) => {
     const icons = {
       agua: '💧',
-      ejercicio: '🏃‍♂️',
+      actividad_fisica: '🏃‍♂️',
+      comida: '🍽️',
       sueño: '😴',
-      meditación: '🧘‍♂️',
-      lectura: '📚',
-      otro: '📝'
+      mindfulness: '🧘‍♂️'
     };
     return icons[type] || '📊';
   };
 
   if (loading && notes.length === 0) {
-    return <div className="loading">Cargando notas...</div>;
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#4CAF50" />
+        <Text style={styles.loadingText}>Cargando notas...</Text>
+      </View>
+    );
   }
 
   return (
-    <div>
-      <div className="section">
-        <h2>{editingNote ? '✏️ Editar Nota' : '➕ Nueva Nota de Hábito'}</h2>
+    <ScrollView style={styles.container}>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>
+          {editingNote ? '✏️ Editar Nota' : '➕ Nueva Nota de Hábito'}
+        </Text>
         
-        {error && <div className="error">{error}</div>}
-        {success && <div className="success">{success}</div>}
+        {error && <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View>}
+        {success && <View style={styles.successBox}><Text style={styles.successText}>{success}</Text></View>}
         
-        <form onSubmit={handleSubmit} className="form">
-          <div className="form-group">
-            <label htmlFor="dailyHabitId">Hábito Diario</label>
-            <select
-              id="dailyHabitId"
-              name="dailyHabitId"
-              value={formData.dailyHabitId}
-              onChange={handleInputChange}
-              required
-            >
-              <option value="">Seleccione un hábito</option>
-              {habits.map(habit => (
-                <option key={habit.id} value={habit.id}>
-                  {getHabitIcon(habit.habitType)} {habit.habitType.toUpperCase()} - 
-                  {habit.value} {habit.unit} - 
-                  {habit.date}
-                  {habit.description && ` - ${habit.description}`}
-                </option>
-              ))}
-            </select>
-          </div>
+        <View style={styles.form}>
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Hábito Diario</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={formData.dailyHabitId}
+                onValueChange={(value) => handleInputChange('dailyHabitId', value)}
+                style={styles.picker}
+              >
+                <Picker.Item label="Seleccione un hábito" value="" />
+                {habits.map(habit => (
+                  <Picker.Item 
+                    key={habit.id} 
+                    label={`${getHabitIcon(habit.habitType)} ${habit.habitType} - ${habit.value} ${habit.unit} - ${habit.date}`} 
+                    value={habit.id.toString()} 
+                  />
+                ))}
+              </Picker>
+            </View>
+          </View>
           
-          <div className="form-group">
-            <label htmlFor="note">Nota</label>
-            <textarea
-              id="note"
-              name="note"
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Nota</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
               value={formData.note}
-              onChange={handleInputChange}
-              required
+              onChangeText={(value) => handleInputChange('note', value)}
               placeholder="Escribe tu nota aquí..."
-              rows="5"
+              multiline
+              numberOfLines={5}
             />
-          </div>
+          </View>
           
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <button type="submit" className="btn btn-primary">
-              {editingNote ? '💾 Actualizar' : '➕ Crear Nota'}
-            </button>
+          <View style={styles.buttonRow}>
+            <TouchableOpacity style={styles.btnPrimary} onPress={handleSubmit}>
+              <Text style={styles.btnText}>
+                {editingNote ? '💾 Actualizar' : '➕ Crear Nota'}
+              </Text>
+            </TouchableOpacity>
             {editingNote && (
-              <button type="button" onClick={handleCancelEdit} className="btn btn-secondary">
-                ❌ Cancelar
-              </button>
+              <TouchableOpacity style={styles.btnSecondary} onPress={handleCancelEdit}>
+                <Text style={styles.btnText}>❌ Cancelar</Text>
+              </TouchableOpacity>
             )}
-          </div>
-        </form>
-      </div>
+          </View>
+        </View>
+      </View>
       
-      <div className="section">
-        <h2>📝 Notas Registradas ({notes.length})</h2>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>📝 Notas Registradas ({notes.length})</Text>
         
         {notes.length === 0 ? (
-          <div className="empty-state">
-            No hay notas registradas. ¡Crea la primera!
-          </div>
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>No hay notas registradas. ¡Crea la primera!</Text>
+          </View>
         ) : (
-          <ul className="list">
-            {notes.map((note) => {
-              const habitInfo = getHabitInfo(note.dailyHabitId);
-              return (
-                <li key={note.id} className="list-item">
-                  <div className="list-item-header">
-                    <div style={{ flex: 1 }}>
-                      <div className="list-item-title">
-                        📝 Nota #{note.id}
-                      </div>
-                      {habitInfo && (
-                        <div className="list-item-content" style={{ marginTop: '0.5rem' }}>
-                          <span className="badge badge-primary">
-                            {getHabitIcon(habitInfo.type)} {habitInfo.type.toUpperCase()}
-                          </span>
-                          <span className="badge badge-secondary">
-                            {habitInfo.value}
-                          </span>
-                          <span className="badge badge-info">
-                            📅 {habitInfo.date}
-                          </span>
-                          {habitInfo.description && (
-                            <p style={{ marginTop: '0.5rem' }}>
-                              <strong>Hábito:</strong> {habitInfo.description}
-                            </p>
-                          )}
-                        </div>
+          notes.map((note) => {
+            const habitInfo = getHabitInfo(note.dailyHabitId);
+            return (
+              <View key={note.id} style={styles.listItem}>
+                <View style={styles.listItemContent}>
+                  <Text style={styles.noteTitle}>📝 Nota #{note.id}</Text>
+                  
+                  {habitInfo && (
+                    <View style={styles.habitInfo}>
+                      <View style={styles.badgeRow}>
+                        <Text style={styles.badgePrimary}>
+                          {getHabitIcon(habitInfo.type)} {habitInfo.type.toUpperCase()}
+                        </Text>
+                        <Text style={styles.badgeSecondary}>{habitInfo.value}</Text>
+                        <Text style={styles.badgeInfo}>📅 {habitInfo.date}</Text>
+                      </View>
+                      {habitInfo.description && (
+                        <Text style={styles.habitDesc}>
+                          <Text style={styles.bold}>Hábito:</Text> {habitInfo.description}
+                        </Text>
                       )}
-                      <div style={{ 
-                        marginTop: '1rem', 
-                        padding: '1rem', 
-                        backgroundColor: '#f9f9f9', 
-                        borderRadius: '6px',
-                        borderLeft: '4px solid var(--secondary-color)'
-                      }}>
-                        <p style={{ whiteSpace: 'pre-wrap' }}>{note.note}</p>
-                      </div>
-                      {note.createdAt && (
-                        <p style={{ 
-                          marginTop: '0.5rem', 
-                          fontSize: '0.85rem', 
-                          color: '#666' 
-                        }}>
-                          Creada: {new Date(note.createdAt).toLocaleString()}
-                        </p>
-                      )}
-                    </div>
-                    <div className="list-item-actions">
-                      <button 
-                        onClick={() => handleEdit(note)} 
-                        className="btn btn-warning btn-small"
-                      >
-                        ✏️ Editar
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(note.id)} 
-                        className="btn btn-danger btn-small"
-                      >
-                        🗑️ Eliminar
-                      </button>
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+                    </View>
+                  )}
+                  
+                  <View style={styles.noteBox}>
+                    <Text style={styles.noteText}>{note.note}</Text>
+                  </View>
+                  
+                  {note.createdAt && (
+                    <Text style={styles.dateText}>
+                      Creada: {new Date(note.createdAt).toLocaleString()}
+                    </Text>
+                  )}
+                </View>
+                
+                <View style={styles.listItemActions}>
+                  <TouchableOpacity 
+                    style={styles.btnWarning} 
+                    onPress={() => handleEdit(note)}
+                  >
+                    <Text style={styles.btnSmallText}>✏️</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.btnDanger} 
+                    onPress={() => handleDelete(note.id)}
+                  >
+                    <Text style={styles.btnSmallText}>🗑️</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            );
+          })
         )}
-      </div>
-    </div>
+      </View>
+    </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+  },
+  section: {
+    backgroundColor: '#fff',
+    margin: 10,
+    padding: 15,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    color: '#333',
+  },
+  errorBox: {
+    backgroundColor: '#ffebee',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 10,
+  },
+  errorText: {
+    color: '#c62828',
+  },
+  successBox: {
+    backgroundColor: '#e8f5e9',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 10,
+  },
+  successText: {
+    color: '#2e7d32',
+  },
+  form: {
+    marginTop: 10,
+  },
+  formGroup: {
+    marginBottom: 15,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 5,
+    color: '#555',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 5,
+    padding: 10,
+    fontSize: 16,
+    backgroundColor: '#fff',
+  },
+  textArea: {
+    height: 100,
+    textAlignVertical: 'top',
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 5,
+    backgroundColor: '#fff',
+  },
+  picker: {
+    height: 50,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 10,
+  },
+  btnPrimary: {
+    flex: 1,
+    backgroundColor: '#4CAF50',
+    padding: 12,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  btnSecondary: {
+    flex: 1,
+    backgroundColor: '#757575',
+    padding: 12,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  btnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  emptyState: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: '#999',
+    fontSize: 16,
+  },
+  listItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  listItemContent: {
+    flex: 1,
+    paddingRight: 10,
+  },
+  noteTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  habitInfo: {
+    marginBottom: 10,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 5,
+    marginBottom: 5,
+  },
+  badgePrimary: {
+    backgroundColor: '#4CAF50',
+    color: '#fff',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    fontSize: 11,
+  },
+  badgeSecondary: {
+    backgroundColor: '#e0e0e0',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    fontSize: 11,
+  },
+  badgeInfo: {
+    backgroundColor: '#2196F3',
+    color: '#fff',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    fontSize: 11,
+  },
+  habitDesc: {
+    fontSize: 13,
+    color: '#555',
+    marginTop: 5,
+  },
+  bold: {
+    fontWeight: 'bold',
+  },
+  noteBox: {
+    backgroundColor: '#f9f9f9',
+    padding: 12,
+    borderRadius: 6,
+    borderLeftWidth: 4,
+    borderLeftColor: '#757575',
+    marginBottom: 8,
+  },
+  noteText: {
+    fontSize: 14,
+    color: '#333',
+    lineHeight: 20,
+  },
+  dateText: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 5,
+  },
+  listItemActions: {
+    flexDirection: 'column',
+    gap: 5,
+  },
+  btnWarning: {
+    backgroundColor: '#FFC107',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  btnDanger: {
+    backgroundColor: '#f44336',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  btnSmallText: {
+    color: '#fff',
+    fontSize: 14,
+  },
+});
 
 export default HabitNotes;
