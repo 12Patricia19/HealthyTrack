@@ -15,7 +15,8 @@ import java.time.LocalDate
 class DailyHabitService(
     private val dailyHabitRepository: DailyHabitRepository,
     private val dailyHabitMapper: DailyHabitMapper,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val goalProgressService: GoalProgressService
 ) {
 
     fun save(request: DailyHabitRequest): DailyHabitResponse {
@@ -24,6 +25,16 @@ class DailyHabitService(
 
         val entity = dailyHabitMapper.toEntity(request, user)
         val savedHabit = dailyHabitRepository.save(entity)
+        
+        if (request.value != null) {
+            goalProgressService.updateProgress(
+                userId = request.userId,
+                habitType = request.habitType,
+                value = request.value,
+                date = request.date
+            )
+        }
+        
         return dailyHabitMapper.toResponse(savedHabit)
     }
 

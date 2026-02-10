@@ -11,6 +11,7 @@ data class GoalResponse(
     val goalName: String,
     val description: String? = null,
     val targetValue: BigDecimal,
+    val currentValue: BigDecimal = BigDecimal.ZERO,
     val unit: String,
     val frequency: String? = null,
     val isActive: Boolean,
