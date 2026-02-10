@@ -32,7 +32,7 @@ class StatsService(
                 progress?.isAchieved == true
             }
         
-        val topHabits = dailyHabitRepository.findTopHabitTypesByUserId(userId, 5)
+        val topHabits = dailyHabitRepository.findTopHabitTypesByUserId(userId)
             .map { result ->
                 HabitTypeCount(
                     habitType = result[0] as String,

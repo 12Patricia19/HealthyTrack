@@ -1,29 +1,39 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from './api';
 
+console.log('AuthService - API_URL:', API_URL);
+
 export const authService = {
   async register(email, password, fullName, additionalData = {}) {
-    const response = await fetch(`${API_URL}/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email,
-        password,
-        fullName,
-        ...additionalData
-      })
-    });
+    try {
+      console.log('Intentando registrar en:', `${API_URL}/auth/register`);
+      const response = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          fullName,
+          ...additionalData
+        })
+      });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Error al registrar');
+      console.log('Response status:', response.status);
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Error al registrar');
+      }
+
+      const data = await response.json();
+      await AsyncStorage.setItem('userId', data.id.toString());
+      await AsyncStorage.setItem('userEmail', data.email);
+      await AsyncStorage.setItem('userFullName', data.fullName);
+      return data;
+    } catch (error) {
+      console.error('Error en register:', error.message);
+      throw error;
     }
-
-    const data = await response.json();
-    await AsyncStorage.setItem('userId', data.id.toString());
-    await AsyncStorage.setItem('userEmail', data.email);
-    await AsyncStorage.setItem('userFullName', data.fullName);
-    return data;
   },
 
   async login(email, password) {

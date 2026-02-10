@@ -16,7 +16,7 @@ interface DailyHabitRepository : JpaRepository<DailyHabit, Long> {
     fun countByUserId(userId: Long): Long
     fun countByUserIdAndDateBetween(userId: Long, startDate: LocalDate, endDate: LocalDate): Long
     
-    @Query("SELECT dh.habitType, COUNT(dh) FROM DailyHabit dh WHERE dh.user.id = :userId GROUP BY dh.habitType ORDER BY COUNT(dh) DESC")
-    fun findTopHabitTypesByUserId(@Param("userId") userId: Long, limit: Int = 5): List<Array<Any>>
+    @Query(value = "SELECT dh.habit_type, COUNT(dh) FROM daily_habits dh WHERE dh.user_id = :userId GROUP BY dh.habit_type ORDER BY COUNT(dh) DESC LIMIT 5", nativeQuery = true)
+    fun findTopHabitTypesByUserId(@Param("userId") userId: Long): List<Array<Any>>
 }
 

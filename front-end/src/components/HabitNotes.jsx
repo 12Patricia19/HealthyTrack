@@ -41,7 +41,7 @@ function HabitNotes() {
       setError(null);
       const [notesData, habitsData] = await Promise.all([
         habitNoteService.getNotesByUser(user.id),
-        dailyHabitService.getDailyHabitsByUser(user.id)
+        dailyHabitService.getHabitsByUser(user.id)
       ]);
       setNotes(notesData);
       setHabits(habitsData);

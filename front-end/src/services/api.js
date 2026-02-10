@@ -1,9 +1,26 @@
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
-// Para Android emulator usar 10.0.2.2:8080
-// Para iOS simulator usar localhost:8080
-// Para dispositivo físico usar la IP de tu computadora
-const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://10.0.2.2:8080/api';
+const getApiUrl = () => {
+  if (Constants.expoConfig?.extra?.apiUrl) {
+    return Constants.expoConfig.extra.apiUrl;
+  }
+  
+  if (__DEV__) {
+    if (Platform.OS === 'android') {
+      return 'http://10.0.2.2:8080/api';
+    }
+    if (Platform.OS === 'ios') {
+      return 'http://localhost:8080/api';
+    }
+  }
+  
+  return 'http://10.0.2.2:8080/api';
+};
+
+const API_URL = getApiUrl();
+
+console.log('API_URL configurada:', API_URL);
 
 // Utility para hacer requests HTTP usando Fetch API nativa de React Native
 class ApiClient {
@@ -70,4 +87,5 @@ class ApiClient {
 
 const api = new ApiClient(API_URL);
 
+export { API_URL };
 export default api;

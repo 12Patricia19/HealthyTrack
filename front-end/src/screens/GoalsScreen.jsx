@@ -58,12 +58,14 @@ export default function GoalsScreen() {
 
     try {
       setLoading(true);
+      const today = new Date().toISOString().split('T')[0];
       await goalService.createGoal(user.id, {
         goalType: formData.goalType || formData.goalName,
         goalName: formData.goalName,
         targetValue: parseFloat(formData.targetValue),
-        unit: formData.unit,
-        frequency: formData.frequency
+        unit: formData.unit || 'unidades',
+        frequency: formData.frequency,
+        startDate: today
       });
       setFormData({
         goalType: '',
