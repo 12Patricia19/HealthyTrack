@@ -16,7 +16,7 @@ import { authService } from '../services/authService';
 import { notificationService } from '../services/notificationService';
 
 export default function ProfileScreen() {
-  const { user, logout, checkAuth } = useAuth();
+  const { user, logout, updateUserProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
@@ -77,18 +77,24 @@ export default function ProfileScreen() {
     try {
       setLoading(true);
       const updateData = {
-        fullName: formData.fullName || undefined,
-        dateOfBirth: formData.dateOfBirth || undefined,
+        fullName: formData.fullName.trim() || undefined,
+        dateOfBirth: formData.dateOfBirth.trim() || undefined,
         gender: formData.gender || undefined,
         weightKg: formData.weightKg ? parseFloat(formData.weightKg) : undefined,
         heightCm: formData.heightCm ? parseFloat(formData.heightCm) : undefined
       };
 
-      await authService.updateUser(user.id, updateData);
-      await checkAuth();
+      Object.keys(updateData).forEach(key => 
+        updateData[key] === undefined && delete updateData[key]
+      );
+
+      console.log('Actualizando perfil con:', updateData);
+      const updatedUser = await updateUserProfile(user.id, updateData);
+      console.log('Perfil actualizado:', updatedUser);
       setIsEditing(false);
       Alert.alert('Éxito', 'Perfil actualizado correctamente');
     } catch (error) {
+      console.error('Error al actualizar perfil:', error);
       Alert.alert('Error', error.message || 'Error al actualizar perfil');
     } finally {
       setLoading(false);

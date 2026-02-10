@@ -29,7 +29,9 @@ export const authService = {
       await AsyncStorage.setItem('userId', data.id.toString());
       await AsyncStorage.setItem('userEmail', data.email);
       await AsyncStorage.setItem('userFullName', data.fullName);
-      return data;
+      
+      const fullUserData = await this.getCurrentUser();
+      return fullUserData;
     } catch (error) {
       console.error('Error en register:', error.message);
       throw error;
@@ -52,7 +54,9 @@ export const authService = {
     await AsyncStorage.setItem('userId', data.id.toString());
     await AsyncStorage.setItem('userEmail', data.email);
     await AsyncStorage.setItem('userFullName', data.fullName);
-    return data;
+    
+    const fullUserData = await this.getCurrentUser();
+    return fullUserData;
   },
 
   async logout() {
@@ -79,18 +83,30 @@ export const authService = {
   },
 
   async updateUser(userId, userData) {
+    console.log('updateUser - Enviando a:', `${API_URL}/auth/me/${userId}`);
+    console.log('updateUser - Datos:', JSON.stringify(userData, null, 2));
+    
     const response = await fetch(`${API_URL}/auth/me/${userId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(userData)
     });
 
+    console.log('updateUser - Response status:', response.status);
+
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Error al actualizar perfil');
+      const errorText = await response.text();
+      console.error('updateUser - Error response:', errorText);
+      try {
+        const error = JSON.parse(errorText);
+        throw new Error(error.message || 'Error al actualizar perfil');
+      } catch (e) {
+        throw new Error('Error al actualizar perfil');
+      }
     }
 
     const data = await response.json();
+    console.log('updateUser - Respuesta:', data);
     await AsyncStorage.setItem('userFullName', data.fullName || '');
     return data;
   }
