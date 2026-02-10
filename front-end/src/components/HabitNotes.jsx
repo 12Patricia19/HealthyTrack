@@ -12,8 +12,10 @@ import {
 import { Picker } from '@react-native-picker/picker';
 import habitNoteService from '../services/habitNoteService';
 import dailyHabitService from '../services/dailyHabitService';
+import { useAuth } from '../context/AuthContext';
 
 function HabitNotes() {
+  const { user } = useAuth();
   const [notes, setNotes] = useState([]);
   const [habits, setHabits] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,16 +28,20 @@ function HabitNotes() {
   });
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user) {
+      loadData();
+    }
+  }, [user]);
 
   const loadData = async () => {
+    if (!user) return;
+    
     try {
       setLoading(true);
       setError(null);
       const [notesData, habitsData] = await Promise.all([
-        habitNoteService.getAllHabitNotes(),
-        dailyHabitService.getAllDailyHabits()
+        habitNoteService.getNotesByUser(user.id),
+        dailyHabitService.getDailyHabitsByUser(user.id)
       ]);
       setNotes(notesData);
       setHabits(habitsData);
@@ -136,17 +142,6 @@ function HabitNotes() {
     } : null;
   };
 
-  const getHabitIcon = (type) => {
-    const icons = {
-      agua: '💧',
-      actividad_fisica: '🏃‍♂️',
-      comida: '🍽️',
-      sueño: '😴',
-      mindfulness: '🧘‍♂️'
-    };
-    return icons[type] || '📊';
-  };
-
   if (loading && notes.length === 0) {
     return (
       <View style={styles.centerContainer}>
@@ -160,7 +155,7 @@ function HabitNotes() {
     <ScrollView style={styles.container}>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>
-          {editingNote ? '✏️ Editar Nota' : '➕ Nueva Nota de Hábito'}
+          {editingNote ? 'Editar Nota' : 'Nueva Nota de Hábito'}
         </Text>
         
         {error && <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View>}
@@ -179,7 +174,7 @@ function HabitNotes() {
                 {habits.map(habit => (
                   <Picker.Item 
                     key={habit.id} 
-                    label={`${getHabitIcon(habit.habitType)} ${habit.habitType} - ${habit.value} ${habit.unit} - ${habit.date}`} 
+                    label={`${habit.habitType} - ${habit.value} ${habit.unit} - ${habit.date}`} 
                     value={habit.id.toString()} 
                   />
                 ))}
@@ -202,12 +197,12 @@ function HabitNotes() {
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.btnPrimary} onPress={handleSubmit}>
               <Text style={styles.btnText}>
-                {editingNote ? '💾 Actualizar' : '➕ Crear Nota'}
+                {editingNote ? 'Actualizar' : 'Crear Nota'}
               </Text>
             </TouchableOpacity>
             {editingNote && (
               <TouchableOpacity style={styles.btnSecondary} onPress={handleCancelEdit}>
-                <Text style={styles.btnText}>❌ Cancelar</Text>
+                <Text style={styles.btnText}>Cancelar</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -215,7 +210,7 @@ function HabitNotes() {
       </View>
       
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>📝 Notas Registradas ({notes.length})</Text>
+        <Text style={styles.sectionTitle}>Notas Registradas ({notes.length})</Text>
         
         {notes.length === 0 ? (
           <View style={styles.emptyState}>
@@ -227,16 +222,16 @@ function HabitNotes() {
             return (
               <View key={note.id} style={styles.listItem}>
                 <View style={styles.listItemContent}>
-                  <Text style={styles.noteTitle}>📝 Nota #{note.id}</Text>
+                  <Text style={styles.noteTitle}>Nota #{note.id}</Text>
                   
                   {habitInfo && (
                     <View style={styles.habitInfo}>
                       <View style={styles.badgeRow}>
                         <Text style={styles.badgePrimary}>
-                          {getHabitIcon(habitInfo.type)} {habitInfo.type.toUpperCase()}
+                          {habitInfo.type.toUpperCase()}
                         </Text>
                         <Text style={styles.badgeSecondary}>{habitInfo.value}</Text>
-                        <Text style={styles.badgeInfo}>📅 {habitInfo.date}</Text>
+                        <Text style={styles.badgeInfo}>{habitInfo.date}</Text>
                       </View>
                       {habitInfo.description && (
                         <Text style={styles.habitDesc}>
@@ -262,13 +257,13 @@ function HabitNotes() {
                     style={styles.btnWarning} 
                     onPress={() => handleEdit(note)}
                   >
-                    <Text style={styles.btnSmallText}>✏️</Text>
+                    <Text style={styles.btnSmallText}>Editar</Text>
                   </TouchableOpacity>
                   <TouchableOpacity 
                     style={styles.btnDanger} 
                     onPress={() => handleDelete(note.id)}
                   >
-                    <Text style={styles.btnSmallText}>🗑️</Text>
+                    <Text style={styles.btnSmallText}>Eliminar</Text>
                   </TouchableOpacity>
                 </View>
               </View>

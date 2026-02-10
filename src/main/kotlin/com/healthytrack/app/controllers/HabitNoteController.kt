@@ -15,6 +15,11 @@ class HabitNoteController(
     @GetMapping
     fun findAll(): ResponseEntity<List<HabitNoteResponse>> =
         ResponseEntity.ok(habitNoteService.findAll())
+        
+    @GetMapping("/user/{userId}")
+    fun findByUserId(@PathVariable userId: Long): ResponseEntity<List<HabitNoteResponse>> =
+        ResponseEntity.ok(habitNoteService.findByUserId(userId))
+        
     @PostMapping
     fun create(@RequestBody request: HabitNoteRequest): ResponseEntity<HabitNoteResponse> =
         ResponseEntity(habitNoteService.create(request), HttpStatus.CREATED)

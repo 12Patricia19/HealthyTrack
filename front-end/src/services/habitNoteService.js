@@ -7,6 +7,12 @@ export const habitNoteService = {
     return response.data;
   },
 
+  // Obtener notas por usuario
+  getNotesByUser: async (userId) => {
+    const response = await api.get(`/habit-notes/user/${userId}`);
+    return response.data;
+  },
+
   // Obtener una nota por ID
   getHabitNoteById: async (id) => {
     const response = await api.get(`/habit-notes/${id}`);

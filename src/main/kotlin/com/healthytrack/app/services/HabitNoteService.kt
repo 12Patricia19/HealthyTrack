@@ -15,6 +15,10 @@ class HabitNoteService(
 ) {
     fun findAll(): List<HabitNoteResponse> =
         habitNoteRepository.findAll().map { habitNoteMapper.toResponse(it) }
+        
+    fun findByUserId(userId: Long): List<HabitNoteResponse> =
+        habitNoteRepository.findByUserId(userId).map { habitNoteMapper.toResponse(it) }
+        
     fun create(request: HabitNoteRequest): HabitNoteResponse {
         val dailyHabit = dailyHabitRepository.findById(request.dailyHabitId)
             .orElseThrow { NoSuchElementException("DailyHabit not found") }

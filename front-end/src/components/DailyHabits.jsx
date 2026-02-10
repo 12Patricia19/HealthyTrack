@@ -11,60 +11,37 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import dailyHabitService from '../services/dailyHabitService';
-import userService from '../services/userService';
+import { useAuth } from '../context/AuthContext';
 
 function DailyHabits() {
+  const { user } = useAuth();
   const [habits, setHabits] = useState([]);
-  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [formData, setFormData] = useState({
-    userId: '',
     date: new Date().toISOString().split('T')[0],
-    habitType: 'agua',
+    habitType: '',
+    habitName: '',
     value: '',
-    unit: 'ml',
+    unit: '',
     description: '',
     notes: '',
     entryMethod: 'manual'
   });
 
-  const habitTypes = [
-    { value: 'agua', label: 'Agua' },
-    { value: 'actividad_fisica', label: 'Actividad fisica' },
-    { value: 'comida', label: 'Comida' },
-    { value: 'sueño', label: 'Sueño' },
-    { value: 'mindfulness', label: 'Mindfulness' }
-  ];
-  
-  const habitTypeLabels = habitTypes.reduce((acc, type) => {
-    acc[type.value] = type.label;
-    return acc;
-  }, {});
-  
-  const units = {
-    agua: ['ml', 'l'],
-    actividad_fisica: ['minutos', 'horas'],
-    comida: ['kcal', 'porciones'],
-    sueño: ['horas', 'minutos'],
-    mindfulness: ['minutos']
-  };
-
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user) {
+      loadData();
+    }
+  }, [user]);
 
   const loadData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const [habitsData, usersData] = await Promise.all([
-        dailyHabitService.getAllDailyHabits(),
-        userService.getAllUsers()
-      ]);
+      const habitsData = await dailyHabitService.getHabitsByUser(user.id);
       setHabits(habitsData);
-      setUsers(usersData);
     } catch (err) {
       setError('Error al cargar datos: ' + (err.response?.data?.message || err.message));
     } finally {
@@ -77,15 +54,6 @@ function DailyHabits() {
       ...prev,
       [name]: value
     }));
-    
-    if (name === 'habitType') {
-      const nextUnit = units[value]?.[0] || '';
-      setFormData(prev => ({
-        ...prev,
-        habitType: value,
-        unit: nextUnit
-      }));
-    }
   };
 
   const handleSubmit = async () => {
@@ -93,26 +61,32 @@ function DailyHabits() {
       setError(null);
       setSuccess(null);
       
-      if (!formData.userId || !formData.value) {
-        setError('Por favor complete todos los campos requeridos');
+      if (!formData.habitType || !formData.habitName) {
+        setError('Por favor ingresa el tipo y nombre del hábito');
         return;
       }
       
       const habitData = {
-        ...formData,
-        userId: parseInt(formData.userId),
-        value: parseFloat(formData.value)
+        userId: user.id,
+        date: formData.date,
+        habitType: formData.habitType,
+        habitName: formData.habitName,
+        value: formData.value ? parseFloat(formData.value) : null,
+        unit: formData.unit || null,
+        description: formData.description,
+        notes: formData.notes,
+        entryMethod: formData.entryMethod
       };
       
       await dailyHabitService.createDailyHabit(habitData);
       setSuccess('Hábito registrado correctamente');
       
       setFormData({
-        userId: '',
         date: new Date().toISOString().split('T')[0],
-        habitType: 'agua',
+        habitType: '',
+        habitName: '',
         value: '',
-        unit: 'ml',
+        unit: '',
         description: '',
         notes: '',
         entryMethod: 'manual'
@@ -150,22 +124,10 @@ function DailyHabits() {
   };
 
   const getUserName = (userId) => {
-    const user = users.find(u => u.id === userId);
-    return user ? `${user.firstName} ${user.lastName}` : 'Usuario desconocido';
+    return user?.fullName || 'Usuario';
   };
 
-  const getHabitIcon = (type) => {
-    const icons = {
-      agua: '💧',
-      actividad_fisica: '🏃‍♂️',
-      comida: '🍽️',
-      sueño: '😴',
-      mindfulness: '🧘‍♂️'
-    };
-    return icons[type] || '📊';
-  };
-
-  if (loading && habits.length === 0) {
+  if (!user) {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#4CAF50" />
@@ -177,32 +139,12 @@ function DailyHabits() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>➕ Registrar Nuevo Hábito</Text>
+        <Text style={styles.sectionTitle}>Registrar Nuevo Hábito</Text>
         
         {error && <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View>}
         {success && <View style={styles.successBox}><Text style={styles.successText}>{success}</Text></View>}
         
         <View style={styles.form}>
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Usuario</Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={formData.userId}
-                onValueChange={(value) => handleInputChange('userId', value)}
-                style={styles.picker}
-              >
-                <Picker.Item label="Seleccione un usuario" value="" />
-                {users.map(user => (
-                  <Picker.Item 
-                    key={user.id} 
-                    label={`${user.firstName} ${user.lastName}`} 
-                    value={user.id.toString()} 
-                  />
-                ))}
-              </Picker>
-            </View>
-          </View>
-          
           <View style={styles.formGroup}>
             <Text style={styles.label}>Fecha</Text>
             <TextInput
@@ -214,22 +156,23 @@ function DailyHabits() {
           </View>
           
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Tipo de Hábito</Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={formData.habitType}
-                onValueChange={(value) => handleInputChange('habitType', value)}
-                style={styles.picker}
-              >
-                {habitTypes.map(type => (
-                  <Picker.Item 
-                    key={type.value} 
-                    label={`${getHabitIcon(type.value)} ${type.label}`} 
-                    value={type.value} 
-                  />
-                ))}
-              </Picker>
-            </View>
+            <Text style={styles.label}>Tipo de Hábito *</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.habitType}
+              onChangeText={(value) => handleInputChange('habitType', value)}
+              placeholder="Ej: ejercicio, lectura, meditación"
+            />
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Nombre del Hábito *</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.habitName}
+              onChangeText={(value) => handleInputChange('habitName', value)}
+              placeholder="Ej: Correr en el parque, Leer 30 minutos"
+            />
           </View>
           
           <View style={styles.formRow}>
@@ -246,17 +189,12 @@ function DailyHabits() {
             
             <View style={styles.formGroupSmall}>
               <Text style={styles.label}>Unidad</Text>
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={formData.unit}
-                  onValueChange={(value) => handleInputChange('unit', value)}
-                  style={styles.picker}
-                >
-                  {(units[formData.habitType] || []).map(unit => (
-                    <Picker.Item key={unit} label={unit} value={unit} />
-                  ))}
-                </Picker>
-              </View>
+              <TextInput
+                style={styles.input}
+                value={formData.unit}
+                onChangeText={(value) => handleInputChange('unit', value)}
+                placeholder="km, min, etc"
+              />
             </View>
           </View>
           
@@ -282,28 +220,14 @@ function DailyHabits() {
             />
           </View>
           
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Método de Registro</Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={formData.entryMethod}
-                onValueChange={(value) => handleInputChange('entryMethod', value)}
-                style={styles.picker}
-              >
-                <Picker.Item label="Manual" value="manual" />
-                <Picker.Item label="Automático" value="automatico" />
-              </Picker>
-            </View>
-          </View>
-          
           <TouchableOpacity style={styles.btnPrimary} onPress={handleSubmit}>
-            <Text style={styles.btnText}>➕ Registrar Hábito</Text>
+            <Text style={styles.btnText}>Registrar Hábito</Text>
           </TouchableOpacity>
         </View>
       </View>
       
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>📊 Hábitos Registrados ({habits.length})</Text>
+        <Text style={styles.sectionTitle}>Hábitos Registrados ({habits.length})</Text>
         
         {habits.length === 0 ? (
           <View style={styles.emptyState}>
@@ -314,12 +238,12 @@ function DailyHabits() {
             <View key={habit.id} style={styles.listItem}>
               <View style={styles.listItemContent}>
                 <Text style={styles.habitTitle}>
-                  {getHabitIcon(habit.habitType)} {habitTypeLabels[habit.habitType] || habit.habitType || 'Sin tipo'}
+                  {habit.habitName || habit.habitType || 'Sin nombre'}
                 </Text>
+                <Text style={styles.habitSubtitle}>{habit.habitType}</Text>
                 <View style={styles.badgeRow}>
-                  <Text style={styles.badgePrimary}>{habit.value} {habit.unit}</Text>
+                  {habit.value && <Text style={styles.badgePrimary}>{habit.value} {habit.unit}</Text>}
                   <Text style={styles.badgeSecondary}>{habit.date}</Text>
-                  <Text style={styles.badgeInfo}>👤 {getUserName(habit.userId)}</Text>
                 </View>
                 {habit.description && (
                   <Text style={styles.detailText}>
@@ -337,7 +261,7 @@ function DailyHabits() {
                 style={styles.btnDanger} 
                 onPress={() => handleDelete(habit.id)}
               >
-                <Text style={styles.btnSmallText}>🗑️</Text>
+                <Text style={styles.btnSmallText}>Eliminar</Text>
               </TouchableOpacity>
             </View>
           ))
