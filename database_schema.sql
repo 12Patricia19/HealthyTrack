@@ -26,7 +26,7 @@ CREATE TABLE users (
     
     full_name VARCHAR(255) NOT NULL,
     date_of_birth DATE,
-    gender VARCHAR(20) CHECK (gender IN ('masculino', 'femenino', 'otro', 'prefiero_no_decir')),
+    gender VARCHAR(20),
     weight_kg DECIMAL(5,2),
     height_cm DECIMAL(5,2),
     
@@ -71,7 +71,7 @@ CREATE TABLE goals (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     
-    goal_type VARCHAR(50) NOT NULL CHECK (goal_type IN ('pasos', 'agua', 'sueño', 'ejercicio', 'calorias', 'peso', 'mindfulness')),
+    goal_type VARCHAR(50) NOT NULL,
     
     goal_name VARCHAR(255) NOT NULL,
     description TEXT,
@@ -95,7 +95,8 @@ CREATE TABLE daily_habits (
     date DATE NOT NULL,
     timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     
-    habit_type VARCHAR(50) NOT NULL CHECK (habit_type IN ('actividad_fisica', 'comida', 'agua', 'sueño', 'mindfulness')),
+    habit_type VARCHAR(50) NOT NULL,
+    habit_name VARCHAR(255),
     
     value DECIMAL(10,2),
     unit VARCHAR(50),
@@ -134,7 +135,7 @@ CREATE TABLE notifications (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     
-    notification_type VARCHAR(50) NOT NULL CHECK (notification_type IN ('recordatorio', 'logro', 'recomendacion', 'sistema')),
+    notification_type VARCHAR(50) NOT NULL,
     
     title VARCHAR(255) NOT NULL,
     message TEXT NOT NULL,
@@ -145,7 +146,7 @@ CREATE TABLE notifications (
     is_read BOOLEAN DEFAULT FALSE,
     is_sent BOOLEAN DEFAULT FALSE,
     
-    priority VARCHAR(20) DEFAULT 'normal' CHECK (priority IN ('baja', 'normal', 'alta')),
+    priority VARCHAR(20) DEFAULT 'normal',
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -154,7 +155,7 @@ CREATE TABLE recommendations (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     
-    recommendation_type VARCHAR(50) NOT NULL CHECK (recommendation_type IN ('hidratacion', 'actividad', 'sueño', 'nutricion', 'general')),
+    recommendation_type VARCHAR(50) NOT NULL,
     
     title VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
@@ -175,7 +176,7 @@ CREATE TABLE shared_progress (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     
-    share_type VARCHAR(50) NOT NULL CHECK (share_type IN ('coach', 'red_social', 'publico')),
+    share_type VARCHAR(50) NOT NULL,
     
     title VARCHAR(255) NOT NULL,
     description TEXT,
