@@ -9,6 +9,7 @@ import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import GoalsScreen from './screens/GoalsScreen';
+import DashboardScreen from './screens/DashboardScreen';
 import DailyHabits from './components/DailyHabits';
 import HabitNotes from './components/HabitNotes';
 
@@ -40,7 +41,9 @@ function MainTabs() {
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
 
-          if (route.name === 'Habits') {
+          if (route.name === 'Dashboard') {
+            iconName = focused ? 'home' : 'home-outline';
+          } else if (route.name === 'Habits') {
             iconName = focused ? 'stats-chart' : 'stats-chart-outline';
           } else if (route.name === 'Notes') {
             iconName = focused ? 'document-text' : 'document-text-outline';
@@ -54,6 +57,14 @@ function MainTabs() {
         },
       })}
     >
+      <Tab.Screen 
+        name="Dashboard" 
+        component={DashboardScreen}
+        options={{
+          title: 'Inicio',
+          tabBarLabel: 'Inicio',
+        }}
+      />
       <Tab.Screen 
         name="Habits" 
         component={DailyHabits}
