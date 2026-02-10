@@ -18,6 +18,9 @@ data class DailyHabitResponse(
     @JsonProperty("habit_type")
     val habitType: String,
 
+    @JsonProperty("habit_name")
+    val habitName: String?,
+
     val value: BigDecimal?,
 
     val unit: String?,

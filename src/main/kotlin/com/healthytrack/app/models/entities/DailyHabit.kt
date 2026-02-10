@@ -26,8 +26,11 @@ data class DailyHabit(
     @Column(name = "habit_timestamp", nullable = false)
     val timestamp: LocalDateTime = LocalDateTime.now(),
 
-    @Column(name = "habit_type", nullable = false)
-    val habitType: String, // actividad_fisica, comida, agua, sueño, mindfulness
+    @Column(name = "habit_type", nullable = false, length = 50)
+    val habitType: String,
+
+    @Column(name = "habit_name")
+    val habitName: String? = null,
 
     @Column(name = "habit_value", precision = 10, scale = 2)
     val value: BigDecimal? = null,

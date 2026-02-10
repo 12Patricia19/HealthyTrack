@@ -16,6 +16,10 @@ data class DailyHabitRequest(
     @JsonAlias("habitType")
     val habitType: String,
 
+    @JsonProperty("habit_name")
+    @JsonAlias("habitName")
+    val habitName: String? = null,
+
     val value: BigDecimal? = null,
 
     val unit: String? = null,

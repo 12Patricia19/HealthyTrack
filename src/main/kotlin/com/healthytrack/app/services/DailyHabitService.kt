@@ -18,24 +18,7 @@ class DailyHabitService(
     private val userRepository: UserRepository
 ) {
 
-    private val validHabitTypes = listOf(
-        "actividad_fisica",
-        "comida",
-        "agua",
-        "sueño",
-        "mindfulness"
-    )
-
-
     fun save(request: DailyHabitRequest): DailyHabitResponse {
-        // Validar tipo de hábito
-        if (request.habitType !in validHabitTypes) {
-            throw InvalidHabitTypeException(
-                "Tipo de hábito inválido. Debe ser uno de: ${validHabitTypes.joinToString(", ")}" 
-            )
-        }
-
-        // Obtener usuario
         val user = userRepository.findById(request.userId)
             .orElseThrow { NoSuchElementException("User with id ${request.userId} not found") }
 
@@ -66,22 +49,12 @@ class DailyHabitService(
     }
 
     fun update(id: Long, request: DailyHabitRequest): DailyHabitResponse {
-        // Verificar que existe
         val existingHabit = dailyHabitRepository.findById(id)
             .orElseThrow { DailyHabitNotFoundException("Hábito diario con ID $id no encontrado") }
 
-        // Validar tipo de hábito
-        if (request.habitType !in validHabitTypes) {
-            throw InvalidHabitTypeException(
-                "Tipo de hábito inválido. Debe ser uno de: ${validHabitTypes.joinToString(", ")}"
-            )
-        }
-
-        // Obtener usuario
         val user = userRepository.findById(request.userId)
             .orElseThrow { NoSuchElementException("User with id ${request.userId} not found") }
 
-        // Crear nueva entidad con el ID existente
         val updatedEntity = dailyHabitMapper.toEntity(request, user).apply {
             this.id = existingHabit.id
         }
