@@ -8,10 +8,14 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Switch,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useAuth } from '../context/AuthContext';
 import { goalService } from '../services/goalService';
+import { notificationService } from '../services/notificationService';
 
 export default function GoalsScreen() {
   const { user } = useAuth();
@@ -23,7 +27,10 @@ export default function GoalsScreen() {
     goalName: '',
     targetValue: '',
     unit: '',
-    frequency: 'diario'
+    frequency: 'diario',
+    enableReminder: false,
+    reminderHour: '9',
+    reminderMinute: '0'
   });
 
   useEffect(() => {
@@ -47,7 +54,25 @@ export default function GoalsScreen() {
   };
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    if (field === 'reminderHour') {
+      const num = value.replace(/[^0-9]/g, '');
+      if (num === '' || (parseInt(num) >= 0 && parseInt(num) <= 23)) {
+        setFormData(prev => ({ ...prev, [field]: num }));
+      }
+    } else if (field === 'reminderMinute') {
+      const num = value.replace(/[^0-9]/g, '');
+      if (num === '' || (parseInt(num) >= 0 && parseInt(num) <= 59)) {
+        setFormData(prev => ({ ...prev, [field]: num }));
+      }
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
+  };
+
+  const formatTimeValue = (value) => {
+    if (!value) return '00';
+    const num = parseInt(value);
+    return num < 10 ? `0${num}` : `${num}`;
   };
 
   const handleSubmit = async () => {
@@ -67,16 +92,41 @@ export default function GoalsScreen() {
         frequency: formData.frequency,
         startDate: today
       });
+
+      if (formData.enableReminder) {
+        try {
+          const hasPermission = await notificationService.requestPermissions();
+          if (hasPermission) {
+            await notificationService.scheduleDailyReminder(
+              formData.goalName,
+              parseInt(formData.reminderHour),
+              parseInt(formData.reminderMinute),
+              `Recordatorio: ${formData.goalName} - ${formData.targetValue} ${formData.unit}`
+            );
+            Alert.alert('Éxito', 'Meta creada y recordatorio programado');
+          } else {
+            Alert.alert('Éxito', 'Meta creada. Activa las notificaciones en Perfil para recibir recordatorios.');
+          }
+        } catch (notifError) {
+          console.error('Error al programar notificación:', notifError);
+          Alert.alert('Éxito', 'Meta creada pero no se pudo programar el recordatorio');
+        }
+      } else {
+        Alert.alert('Éxito', 'Meta creada correctamente');
+      }
+
       setFormData({
         goalType: '',
         goalName: '',
         targetValue: '',
         unit: '',
-        frequency: 'diario'
+        frequency: 'diario',
+        enableReminder: false,
+        reminderHour: '9',
+        reminderMinute: '0'
       });
       setShowForm(false);
       await loadGoals();
-      Alert.alert('Éxito', 'Meta creada correctamente');
     } catch (error) {
       Alert.alert('Error', 'Error al crear meta: ' + error.message);
     } finally {
@@ -124,7 +174,16 @@ export default function GoalsScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+    >
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
       <View style={styles.header}>
         <Text style={styles.title}>Mis Metas</Text>
         <TouchableOpacity
@@ -195,6 +254,53 @@ export default function GoalsScreen() {
             </View>
           </View>
 
+          <View style={styles.reminderSection}>
+            <View style={styles.reminderToggle}>
+              <Text style={styles.label}>Recordatorio Diario</Text>
+              <Switch
+                value={formData.enableReminder}
+                onValueChange={(value) => handleInputChange('enableReminder', value)}
+                trackColor={{ false: '#767577', true: '#81c784' }}
+                thumbColor={formData.enableReminder ? '#4CAF50' : '#f4f3f4'}
+              />
+            </View>
+
+            {formData.enableReminder && (
+              <View>
+                <Text style={styles.helpText}>
+                  Te recordaremos trabajar en esta meta cada día a la hora configurada
+                </Text>
+                <View style={styles.timeRow}>
+                  <View style={styles.timeGroup}>
+                    <Text style={styles.label}>Hora</Text>
+                    <TextInput
+                      style={styles.timeInput}
+                      value={formData.reminderHour}
+                      onChangeText={(value) => handleInputChange('reminderHour', value)}
+                      onBlur={() => setFormData(prev => ({ ...prev, reminderHour: formatTimeValue(prev.reminderHour) }))}
+                      placeholder="09"
+                      keyboardType="number-pad"
+                      maxLength={2}
+                    />
+                  </View>
+                  <Text style={styles.timeSeparator}>:</Text>
+                  <View style={styles.timeGroup}>
+                    <Text style={styles.label}>Minuto</Text>
+                    <TextInput
+                      style={styles.timeInput}
+                      value={formData.reminderMinute}
+                      onChangeText={(value) => handleInputChange('reminderMinute', value)}
+                      onBlur={() => setFormData(prev => ({ ...prev, reminderMinute: formatTimeValue(prev.reminderMinute) }))}
+                      placeholder="00"
+                      keyboardType="number-pad"
+                      maxLength={2}
+                    />
+                  </View>
+                </View>
+              </View>
+            )}
+          </View>
+
           <TouchableOpacity
             style={styles.submitButton}
             onPress={handleSubmit}
@@ -209,7 +315,7 @@ export default function GoalsScreen() {
         </View>
       )}
 
-      <ScrollView style={styles.goalsContainer}>
+      <View style={styles.goalsContainer}>
         {loading && goals.length === 0 ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#4CAF50" />
@@ -259,8 +365,9 @@ export default function GoalsScreen() {
             </View>
           ))
         )}
+      </View>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -268,6 +375,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   loadingContainer: {
     flex: 1,
@@ -342,6 +455,51 @@ const styles = StyleSheet.create({
   picker: {
     height: 50,
   },
+  reminderSection: {
+    marginTop: 10,
+    marginBottom: 15,
+    padding: 15,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+  },
+  reminderToggle: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  helpText: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 15,
+    lineHeight: 18,
+  },
+  timeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  timeGroup: {
+    alignItems: 'center',
+  },
+  timeInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    width: 70,
+    backgroundColor: '#fff',
+  },
+  timeSeparator: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 20,
+  },
   submitButton: {
     backgroundColor: '#4CAF50',
     padding: 15,
@@ -354,7 +512,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  goalsContainer: {
+  go: {
     flex: 1,
     padding: 15,
   },

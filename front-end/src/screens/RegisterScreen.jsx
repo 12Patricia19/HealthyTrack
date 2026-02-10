@@ -52,7 +52,10 @@ export default function RegisterScreen({ navigation }) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.content}>
           <Text style={styles.title}>Crear Cuenta</Text>
           <Text style={styles.subtitle}>Únete a HealthyTrack</Text>

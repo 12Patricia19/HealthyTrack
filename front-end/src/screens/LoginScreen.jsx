@@ -40,7 +40,10 @@ export default function LoginScreen({ navigation }) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.content}>
           <Text style={styles.title}>HealthyTrack</Text>
           <Text style={styles.subtitle}>Bienvenido de vuelta</Text>

@@ -8,7 +8,9 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
-  Switch
+  Switch,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useAuth } from '../context/AuthContext';
@@ -132,7 +134,16 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <KeyboardAvoidingView 
+      style={{flex: 1}}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+    >
+    <ScrollView 
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+      keyboardShouldPersistTaps="handled"
+    >
       <View style={styles.header}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>
@@ -286,6 +297,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </View>
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -293,6 +305,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   loadingContainer: {
     flex: 1,

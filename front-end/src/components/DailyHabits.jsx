@@ -8,9 +8,13 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Switch,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import dailyHabitService from '../services/dailyHabitService';
+import { notificationService } from '../services/notificationService';
 import { useAuth } from '../context/AuthContext';
 
 function DailyHabits() {
@@ -27,7 +31,12 @@ function DailyHabits() {
     unit: '',
     description: '',
     notes: '',
-    entryMethod: 'manual'
+    entryMethod: 'manual',
+    enableReminder: false,
+    reminderType: 'daily',
+    reminderHour: '9',
+    reminderMinute: '0',
+    intervalMinutes: '60'
   });
 
   useEffect(() => {
@@ -50,10 +59,30 @@ function DailyHabits() {
   };
 
   const handleInputChange = (name, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    if (name === 'reminderHour') {
+      const num = value.replace(/[^0-9]/g, '');
+      if (num === '' || (parseInt(num) >= 0 && parseInt(num) <= 23)) {
+        setFormData(prev => ({ ...prev, [name]: num }));
+      }
+    } else if (name === 'reminderMinute') {
+      const num = value.replace(/[^0-9]/g, '');
+      if (num === '' || (parseInt(num) >= 0 && parseInt(num) <= 59)) {
+        setFormData(prev => ({ ...prev, [name]: num }));
+      }
+    } else if (name === 'intervalMinutes') {
+      const num = value.replace(/[^0-9]/g, '');
+      if (num === '' || parseInt(num) > 0) {
+        setFormData(prev => ({ ...prev, [name]: num }));
+      }
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const formatTimeValue = (value) => {
+    if (!value) return '00';
+    const num = parseInt(value);
+    return num < 10 ? `0${num}` : `${num}`;
   };
 
   const handleSubmit = async () => {
@@ -79,7 +108,37 @@ function DailyHabits() {
       };
       
       await dailyHabitService.createDailyHabit(habitData);
-      setSuccess('Hábito registrado correctamente');
+
+      if (formData.enableReminder) {
+        try {
+          const hasPermission = await notificationService.requestPermissions();
+          if (hasPermission) {
+            if (formData.reminderType === 'daily') {
+              await notificationService.scheduleDailyReminder(
+                formData.habitName,
+                parseInt(formData.reminderHour),
+                parseInt(formData.reminderMinute),
+                `Recordatorio: ${formData.habitName}`
+              );
+              setSuccess('Hábito registrado y recordatorio diario programado');
+            } else {
+              await notificationService.scheduleIntervalReminder(
+                formData.habitName,
+                parseInt(formData.intervalMinutes),
+                `Recordatorio: ${formData.habitName}`
+              );
+              setSuccess('Hábito registrado y recordatorio por intervalo programado');
+            }
+          } else {
+            setSuccess('Hábito registrado. Activa las notificaciones en Perfil para recordatorios.');
+          }
+        } catch (notifError) {
+          console.error('Error al programar notificación:', notifError);
+          setSuccess('Hábito registrado pero no se pudo programar el recordatorio');
+        }
+      } else {
+        setSuccess('Hábito registrado correctamente');
+      }
       
       setFormData({
         date: new Date().toISOString().split('T')[0],
@@ -89,7 +148,12 @@ function DailyHabits() {
         unit: '',
         description: '',
         notes: '',
-        entryMethod: 'manual'
+        entryMethod: 'manual',
+        enableReminder: false,
+        reminderType: 'daily',
+        reminderHour: '9',
+        reminderMinute: '0',
+        intervalMinutes: '60'
       });
       
       loadData();
@@ -137,7 +201,16 @@ function DailyHabits() {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+    >
+    <ScrollView 
+      style={styles.scrollView}
+      contentContainerStyle={styles.scrollContent}
+      keyboardShouldPersistTaps="handled"
+    >
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Registrar Nuevo Hábito</Text>
         
@@ -219,6 +292,87 @@ function DailyHabits() {
               numberOfLines={3}
             />
           </View>
+
+          <View style={styles.reminderSection}>
+            <View style={styles.reminderToggle}>
+              <Text style={styles.label}>Programar Recordatorio</Text>
+              <Switch
+                value={formData.enableReminder}
+                onValueChange={(value) => handleInputChange('enableReminder', value)}
+                trackColor={{ false: '#767577', true: '#81c784' }}
+                thumbColor={formData.enableReminder ? '#4CAF50' : '#f4f3f4'}
+              />
+            </View>
+
+            {formData.enableReminder && (
+              <View>
+                <Text style={styles.helpText}>
+                  Configura cu\u00e1ndo quieres recibir recordatorios para este h\u00e1bito
+                </Text>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Tipo de Recordatorio</Text>
+                  <View style={styles.pickerContainer}>
+                    <Picker
+                      selectedValue={formData.reminderType}
+                      onValueChange={(value) => handleInputChange('reminderType', value)}
+                      style={styles.picker}
+                    >
+                      <Picker.Item label="Diario (a una hora espec\u00edfica)" value="daily" />
+                      <Picker.Item label="Por intervalo (cada X minutos)" value="interval" />
+                    </Picker>
+                  </View>
+                </View>
+
+                {formData.reminderType === 'daily' ? (
+                  <View>
+                    <Text style={styles.helpText}>Hora del recordatorio diario:</Text>
+                    <View style={styles.timeRow}>
+                      <View style={styles.timeGroup}>
+                        <Text style={styles.label}>Hora</Text>
+                        <TextInput
+                          style={styles.timeInput}
+                          value={formData.reminderHour}
+                          onChangeText={(value) => handleInputChange('reminderHour', value)}
+                          onBlur={() => setFormData(prev => ({ ...prev, reminderHour: formatTimeValue(prev.reminderHour) }))}
+                          placeholder="09"
+                          keyboardType="number-pad"
+                          maxLength={2}
+                        />
+                      </View>
+                      <Text style={styles.timeSeparator}>:</Text>
+                      <View style={styles.timeGroup}>
+                        <Text style={styles.label}>Minuto</Text>
+                        <TextInput
+                          style={styles.timeInput}
+                          value={formData.reminderMinute}
+                          onChangeText={(value) => handleInputChange('reminderMinute', value)}
+                          onBlur={() => setFormData(prev => ({ ...prev, reminderMinute: formatTimeValue(prev.reminderMinute) }))}
+                          placeholder="00"
+                          keyboardType="number-pad"
+                          maxLength={2}
+                        />
+                      </View>
+                    </View>
+                  </View>
+                ) : (
+                  <View style={styles.formGroup}>
+                    <Text style={styles.label}>Cada cu\u00e1ntos minutos</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={formData.intervalMinutes}
+                      onChangeText={(value) => handleInputChange('intervalMinutes', value)}
+                      placeholder="60"
+                      keyboardType="numeric"
+                    />
+                    <Text style={styles.helpText}>
+                      Recordatorio cada {formData.intervalMinutes || '60'} minutos mientras la app est\u00e9 activa
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+          </View>
           
           <TouchableOpacity style={styles.btnPrimary} onPress={handleSubmit}>
             <Text style={styles.btnText}>Registrar Hábito</Text>
@@ -268,13 +422,20 @@ function DailyHabits() {
         )}
       </View>
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  scrollView: {
+    flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   centerContainer: {
     flex: 1,
@@ -365,6 +526,52 @@ const styles = StyleSheet.create({
   },
   picker: {
     height: 50,
+  },
+  reminderSection: {
+    marginTop: 10,
+    marginBottom: 15,
+    padding: 15,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+  },
+  reminderToggle: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  helpText: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 10,
+    lineHeight: 18,
+  },
+  timeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    marginTop: 10,
+  },
+  timeGroup: {
+    alignItems: 'center',
+  },
+  timeInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    width: 70,
+    backgroundColor: '#fff',
+  },
+  timeSeparator: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 20,
   },
   btnPrimary: {
     backgroundColor: '#4CAF50',

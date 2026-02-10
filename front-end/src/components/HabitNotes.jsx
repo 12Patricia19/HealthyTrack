@@ -8,6 +8,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import habitNoteService from '../services/habitNoteService';
@@ -152,7 +154,16 @@ function HabitNotes() {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+    >
+    <ScrollView 
+      style={styles.scrollView}
+      contentContainerStyle={styles.scrollContent}
+      keyboardShouldPersistTaps="handled"
+    >
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>
           {editingNote ? 'Editar Nota' : 'Nueva Nota de Hábito'}
@@ -272,13 +283,20 @@ function HabitNotes() {
         )}
       </View>
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  scrollView: {
+    flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   centerContainer: {
     flex: 1,
