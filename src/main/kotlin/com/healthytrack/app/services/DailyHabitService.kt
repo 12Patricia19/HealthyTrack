@@ -2,7 +2,6 @@
 package com.healthytrack.app.services
 
 import com.healthytrack.app.exceptions.DailyHabitNotFoundException
-import com.healthytrack.app.exceptions.InvalidHabitTypeException
 import com.healthytrack.app.mappers.DailyHabitMapper
 import com.healthytrack.app.models.requests.DailyHabitRequest
 import com.healthytrack.app.models.responses.DailyHabitResponse

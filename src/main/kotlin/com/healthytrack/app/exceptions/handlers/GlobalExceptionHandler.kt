@@ -1,7 +1,6 @@
 package com.healthytrack.app.exceptions.handlers
 
 import com.healthytrack.app.exceptions.DailyHabitNotFoundException
-import com.healthytrack.app.exceptions.InvalidHabitTypeException
 import com.healthytrack.app.models.responses.ErrorResponse
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -27,16 +26,6 @@ class GlobalExceptionHandler {
         return ResponseEntity(
             ErrorResponse(ex.message),
             HttpStatus.NOT_FOUND
-        )
-    }
-
-    @ExceptionHandler(InvalidHabitTypeException::class)
-    fun handleInvalidHabitTypeException(
-        ex: InvalidHabitTypeException
-    ): ResponseEntity<ErrorResponse> {
-        return ResponseEntity(
-            ErrorResponse(ex.message),
-            HttpStatus.BAD_REQUEST
         )
     }
 
