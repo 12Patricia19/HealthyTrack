@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import ProfileScreen from './screens/ProfileScreen';
+import GoalsScreen from './screens/GoalsScreen';
 import DailyHabits from './components/DailyHabits';
 import HabitNotes from './components/HabitNotes';
 
@@ -43,6 +44,8 @@ function MainTabs() {
             iconName = focused ? 'stats-chart' : 'stats-chart-outline';
           } else if (route.name === 'Notes') {
             iconName = focused ? 'document-text' : 'document-text-outline';
+          } else if (route.name === 'Goals') {
+            iconName = focused ? 'trophy' : 'trophy-outline';
           } else if (route.name === 'Profile') {
             iconName = focused ? 'person' : 'person-outline';
           }
@@ -65,6 +68,14 @@ function MainTabs() {
         options={{
           title: 'Notas',
           tabBarLabel: 'Notas',
+        }}
+      />
+      <Tab.Screen 
+        name="Goals" 
+        component={GoalsScreen}
+        options={{
+          title: 'Mis Metas',
+          tabBarLabel: 'Metas',
         }}
       />
       <Tab.Screen 

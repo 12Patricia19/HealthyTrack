@@ -66,5 +66,22 @@ export const authService = {
 
   async getUserId() {
     return await AsyncStorage.getItem('userId');
+  },
+
+  async updateUser(userId, userData) {
+    const response = await fetch(`${API_URL}/auth/me/${userId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData)
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Error al actualizar perfil');
+    }
+
+    const data = await response.json();
+    await AsyncStorage.setItem('userFullName', data.fullName || '');
+    return data;
   }
 };
