@@ -60,6 +60,8 @@ export default function DashboardScreen({ navigation }) {
   };
 
   const getProgressPercentage = (goal) => {
+    // Si la meta está completada, siempre mostrar 100%
+    if (!goal.isActive) return 100;
     if (!goal.currentValue || !goal.targetValue) return 0;
     return Math.min(100, Math.round((goal.currentValue / goal.targetValue) * 100));
   };

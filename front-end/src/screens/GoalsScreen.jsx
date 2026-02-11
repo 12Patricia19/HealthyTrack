@@ -193,6 +193,8 @@ export default function GoalsScreen() {
   };
 
   const getProgressPercentage = (goal) => {
+    // Si la meta está completada, siempre mostrar 100%
+    if (!goal.isActive) return 100;
     if (!goal.currentValue || !goal.targetValue) return 0;
     return Math.min(100, Math.round((goal.currentValue / goal.targetValue) * 100));
   };
@@ -222,7 +224,7 @@ export default function GoalsScreen() {
           style={styles.addButton}
           onPress={() => setShowForm(!showForm)}
         >
-          <Text style={styles.addButtonText}>{showForm ? 'Cancelar' : '+'}</Text>
+          <Text style={styles.addButtonText}>{showForm ? '-' : '+'}</Text>
         </TouchableOpacity>
       </View>
 

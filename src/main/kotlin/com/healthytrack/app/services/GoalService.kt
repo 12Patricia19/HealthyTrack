@@ -1,17 +1,21 @@
 package com.healthytrack.app.services
 
 import com.healthytrack.app.mappers.GoalMapper
+import com.healthytrack.app.models.entities.GoalProgress
 import com.healthytrack.app.models.requests.GoalRequest
 import com.healthytrack.app.models.responses.GoalResponse
+import com.healthytrack.app.repositories.GoalProgressRepository
 import com.healthytrack.app.repositories.GoalRepository
 import com.healthytrack.app.repositories.UserRepository
 import org.springframework.stereotype.Service
+import java.time.LocalDate
 
 @Service
 class GoalService(
     private val goalRepository: GoalRepository,
     private val userRepository: UserRepository,
-    private val goalMapper: GoalMapper
+    private val goalMapper: GoalMapper,
+    private val goalProgressRepository: GoalProgressRepository
 ) {
     fun create(userId: Long, request: GoalRequest): GoalResponse {
         val user = userRepository.findById(userId)
@@ -40,6 +44,28 @@ class GoalService(
     fun completeGoal(id: Long): GoalResponse {
         val goal = goalRepository.findById(id)
             .orElseThrow { NoSuchElementException("Goal not found") }
+        
+        // Crear o actualizar el progreso para que refleje el 100%
+        val today = LocalDate.now()
+        val existingProgress = goalProgressRepository.findByGoalIdAndDate(goal.id, today)
+        
+        if (existingProgress != null) {
+            val updatedProgress = existingProgress.copy(
+                currentValue = goal.targetValue,
+                isAchieved = true
+            )
+            goalProgressRepository.save(updatedProgress)
+        } else {
+            val completedProgress = GoalProgress(
+                goal = goal,
+                user = goal.user,
+                date = today,
+                currentValue = goal.targetValue,
+                targetValue = goal.targetValue,
+                isAchieved = true
+            )
+            goalProgressRepository.save(completedProgress)
+        }
         
         // Marcar como inactiva usando copy y asignando el ID existente
         val completed = goal.copy(isActive = false).apply {
