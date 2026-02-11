@@ -10,9 +10,7 @@ services:
       - "5433:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
-      - ./database_schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
-      - ./database_migration_full_name.sql:/docker-entrypoint-initdb.d/migration.sql:ro
-      - ./init-database.sh:/docker-entrypoint-initdb.d/init-database.sh:ro
+      - ./init-db.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     networks:
       - healthytrack-network
     healthcheck:
