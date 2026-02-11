@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
   Platform
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/authService';
 import { notificationService } from '../services/notificationService';
@@ -30,12 +31,18 @@ export default function ProfileScreen() {
     heightCm: ''
   });
 
-  useEffect(() => {
-    checkNotificationPermissions();
-    if (user) {
-      loadUserData();
-    }
-  }, [user]);
+  useFocusEffect(
+    useCallback(() => {
+      console.log('ProfileScreen - useFocusEffect - user:', user);
+      checkNotificationPermissions();
+      if (user) {
+        console.log('ProfileScreen - user.id:', user.id);
+        loadUserData();
+      } else {
+        console.log('ProfileScreen - No hay usuario autenticado');
+      }
+    }, [user])
+  );
 
   const loadUserData = () => {
     setFormData({

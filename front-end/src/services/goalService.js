@@ -28,5 +28,18 @@ export const goalService = {
       method: 'DELETE'
     });
     if (!response.ok) throw new Error('Error al eliminar meta');
+  },
+
+  async completeGoal(userId, goalId) {
+    const response = await fetch(`${API_URL}/users/${userId}/goals/${goalId}/complete`, {
+      method: 'PATCH'
+    });
+    if (!response.ok) throw new Error('Error al completar meta');
+    return await response.json();
+  },
+
+  async getCompletedGoals(userId) {
+    const allGoals = await this.getGoals(userId);
+    return allGoals.filter(goal => !goal.isActive);
   }
 };

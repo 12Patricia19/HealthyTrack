@@ -1,4 +1,5 @@
 import api from './api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const normalizeHabit = (habit) => ({
   ...habit,
@@ -8,9 +9,11 @@ const normalizeHabit = (habit) => ({
 });
 
 export const dailyHabitService = {
-  // Obtener todos los hábitos diarios
+  // Obtener todos los hábitos diarios del usuario actual
   getAllDailyHabits: async () => {
-    const response = await api.get('/daily-habits');
+    const userId = await AsyncStorage.getItem('userId');
+    if (!userId) throw new Error('Usuario no autenticado');
+    const response = await api.get(`/daily-habits/user/${userId}`);
     return Array.isArray(response.data)
       ? response.data.map(normalizeHabit)
       : [];
@@ -48,9 +51,11 @@ export const dailyHabitService = {
       : [];
   },
 
-  // Obtener hábitos por fecha
+  // Obtener hábitos por fecha del usuario actual
   getHabitsByDate: async (date) => {
-    const response = await api.get(`/daily-habits/date/${date}`);
+    const userId = await AsyncStorage.getItem('userId');
+    if (!userId) throw new Error('Usuario no autenticado');
+    const response = await api.get(`/daily-habits/user/${userId}/date/${date}`);
     return Array.isArray(response.data)
       ? response.data.map(normalizeHabit)
       : [];

@@ -36,4 +36,17 @@ class GoalService(
         if (!goalRepository.existsById(id)) throw NoSuchElementException("Goal not found")
         goalRepository.deleteById(id)
     }
+
+    fun completeGoal(id: Long): GoalResponse {
+        val goal = goalRepository.findById(id)
+            .orElseThrow { NoSuchElementException("Goal not found") }
+        
+        // Marcar como inactiva usando copy y asignando el ID existente
+        val completed = goal.copy(isActive = false).apply {
+            this.id = goal.id
+        }
+        
+        val saved = goalRepository.save(completed)
+        return goalMapper.toResponse(saved)
+    }
 }

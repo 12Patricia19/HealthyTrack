@@ -1,9 +1,12 @@
 import api from './api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const habitNoteService = {
-  // Obtener todas las notas de hábitos
+  // Obtener todas las notas de hábitos del usuario actual
   getAllHabitNotes: async () => {
-    const response = await api.get('/habit-notes');
+    const userId = await AsyncStorage.getItem('userId');
+    if (!userId) throw new Error('Usuario no autenticado');
+    const response = await api.get(`/habit-notes/user/${userId}`);
     return response.data;
   },
 

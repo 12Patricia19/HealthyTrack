@@ -23,7 +23,7 @@ class AuthService(
 ) {
     fun register(request: RegisterRequest): AuthResponse {
         if (userRepository.existsByEmail(request.email)) {
-            throw IllegalArgumentException("Email already registered")
+            throw IllegalArgumentException("El email ya está registrado")
         }
 
         val userRole = roleRepository.findByName("usuario")

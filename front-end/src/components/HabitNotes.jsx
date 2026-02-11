@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import { useFocusEffect } from '@react-navigation/native';
 import habitNoteService from '../services/habitNoteService';
 import dailyHabitService from '../services/dailyHabitService';
 import { useAuth } from '../context/AuthContext';
@@ -29,11 +30,13 @@ function HabitNotes() {
     note: ''
   });
 
-  useEffect(() => {
-    if (user) {
-      loadData();
-    }
-  }, [user]);
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        loadData();
+      }
+    }, [user])
+  );
 
   const loadData = async () => {
     if (!user) return;

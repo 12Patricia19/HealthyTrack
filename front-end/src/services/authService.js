@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from './api';
+import { notificationService } from './notificationService';
 
 console.log('AuthService - API_URL:', API_URL);
 
@@ -21,17 +22,16 @@ export const authService = {
       console.log('Response status:', response.status);
 
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json().catch(() => ({}));
         throw new Error(error.message || 'Error al registrar');
       }
 
       const data = await response.json();
-      await AsyncStorage.setItem('userId', data.id.toString());
-      await AsyncStorage.setItem('userEmail', data.email);
-      await AsyncStorage.setItem('userFullName', data.fullName);
+      console.log('Register response data:', data);
       
-      const fullUserData = await this.getCurrentUser();
-      return fullUserData;
+      // No guardar en AsyncStorage ni obtener usuario completo
+      // El usuario debe hacer login después de registrarse
+      return data;
     } catch (error) {
       console.error('Error en register:', error.message);
       throw error;
@@ -55,22 +55,43 @@ export const authService = {
     await AsyncStorage.setItem('userEmail', data.email);
     await AsyncStorage.setItem('userFullName', data.fullName);
     
+    // Restaurar notificaciones
+    await notificationService.restoreNotifications();
+    
     const fullUserData = await this.getCurrentUser();
     return fullUserData;
   },
 
   async logout() {
+    // Cancelar todas las notificaciones
+    await notificationService.cancelAllNotifications();
     await AsyncStorage.multiRemove(['userId', 'userEmail', 'userFullName']);
   },
 
   async getCurrentUser() {
     const userId = await AsyncStorage.getItem('userId');
-    if (!userId) return null;
+    console.log('getCurrentUser - userId desde AsyncStorage:', userId);
+    
+    if (!userId) {
+      console.log('getCurrentUser - No hay userId');
+      return null;
+    }
 
-    const response = await fetch(`${API_URL}/auth/me/${userId}`);
-    if (!response.ok) return null;
+    const url = `${API_URL}/auth/me/${userId}`;
+    console.log('getCurrentUser - Consultando:', url);
+    
+    const response = await fetch(url);
+    console.log('getCurrentUser - Response status:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('getCurrentUser - Error response:', errorText);
+      return null;
+    }
 
-    return await response.json();
+    const userData = await response.json();
+    console.log('getCurrentUser - Usuario obtenido:', userData);
+    return userData;
   },
 
   async isAuthenticated() {

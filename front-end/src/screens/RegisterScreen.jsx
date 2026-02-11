@@ -40,6 +40,16 @@ export default function RegisterScreen({ navigation }) {
     setLoading(true);
     try {
       await register(email, password, fullName);
+      Alert.alert(
+        'Registro Exitoso',
+        'Tu cuenta ha sido creada. Por favor inicia sesión.',
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.navigate('Login')
+          }
+        ]
+      );
     } catch (error) {
       Alert.alert('Error', error.message || 'Error al registrarse');
     } finally {

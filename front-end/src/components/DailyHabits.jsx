@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
   Platform,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import { useFocusEffect } from '@react-navigation/native';
 import dailyHabitService from '../services/dailyHabitService';
 import { notificationService } from '../services/notificationService';
 import { useAuth } from '../context/AuthContext';
@@ -39,11 +40,13 @@ function DailyHabits() {
     intervalMinutes: '60'
   });
 
-  useEffect(() => {
-    if (user) {
-      loadData();
-    }
-  }, [user]);
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        loadData();
+      }
+    }, [user])
+  );
 
   const loadData = async () => {
     try {
@@ -162,7 +165,7 @@ function DailyHabits() {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id, habitName) => {
     Alert.alert(
       'Confirmar eliminación',
       '¿Está seguro de eliminar este hábito?',
@@ -175,6 +178,8 @@ function DailyHabits() {
             try {
               setError(null);
               setSuccess(null);
+              // Cancelar notificaciones de este hábito
+              await notificationService.cancelHabitNotifications(habitName);
               await dailyHabitService.deleteDailyHabit(id);
               setSuccess('Hábito eliminado correctamente');
               loadData();
@@ -413,7 +418,7 @@ function DailyHabits() {
               </View>
               <TouchableOpacity 
                 style={styles.btnDanger} 
-                onPress={() => handleDelete(habit.id)}
+                onPress={() => handleDelete(habit.id, habit.habitName)}
               >
                 <Text style={styles.btnSmallText}>Eliminar</Text>
               </TouchableOpacity>

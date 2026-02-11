@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
   Platform,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { goalService } from '../services/goalService';
 import { notificationService } from '../services/notificationService';
@@ -33,11 +34,13 @@ export default function GoalsScreen() {
     reminderMinute: '0'
   });
 
-  useEffect(() => {
-    if (user) {
-      loadGoals();
-    }
-  }, [user]);
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        loadGoals();
+      }
+    }, [user])
+  );
 
   const loadGoals = async () => {
     if (!user) return;
@@ -146,11 +149,40 @@ export default function GoalsScreen() {
           onPress: async () => {
             try {
               setLoading(true);
+              // Cancelar notificaciones de esta meta
+              await notificationService.cancelGoalNotifications(goalId);
               await goalService.deleteGoal(user.id, goalId);
               await loadGoals();
               Alert.alert('Éxito', 'Meta eliminada');
             } catch (error) {
               Alert.alert('Error', 'Error al eliminar meta: ' + error.message);
+            } finally {
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleComplete = async (goalId, goalName) => {
+    Alert.alert(
+      'Completar Meta',
+      `¡Felicidades! ¿Completaste la meta "${goalName}"?`,
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Sí, Completada',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await goalService.completeGoal(user.id, goalId);
+              // Cancelar notificaciones de esta meta
+              await notificationService.cancelGoalNotifications(goalId);
+              await loadGoals();
+              Alert.alert('¡Éxito!', 'Meta completada. ¡Sigue así!');
+            } catch (error) {
+              Alert.alert('Error', 'Error al completar meta: ' + error.message);
             } finally {
               setLoading(false);
             }
@@ -332,12 +364,22 @@ export default function GoalsScreen() {
             <View key={goal.id} style={styles.goalCard}>
               <View style={styles.goalHeader}>
                 <Text style={styles.goalName}>{goal.goalName}</Text>
-                <TouchableOpacity
-                  onPress={() => handleDelete(goal.id)}
-                  style={styles.deleteButton}
-                >
-                  <Text style={styles.deleteButtonText}>×</Text>
-                </TouchableOpacity>
+                <View style={styles.goalActions}>
+                  {goal.isActive && (
+                    <TouchableOpacity
+                      onPress={() => handleComplete(goal.id, goal.goalName)}
+                      style={styles.completeButton}
+                    >
+                      <Text style={styles.completeButtonText}>✓</Text>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity
+                    onPress={() => handleDelete(goal.id)}
+                    style={styles.deleteButton}
+                  >
+                    <Text style={styles.deleteButtonText}>×</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
 
               <Text style={styles.goalType}>{goal.goalType}</Text>
@@ -358,9 +400,14 @@ export default function GoalsScreen() {
 
               <View style={styles.goalFooter}>
                 <Text style={styles.goalFrequency}>{goal.frequency}</Text>
-                <Text style={styles.goalPercentage}>
-                  {getProgressPercentage(goal)}%
-                </Text>
+                <View style={styles.goalStats}>
+                  {!goal.isActive && (
+                    <Text style={styles.completedBadge}>✓ Completada</Text>
+                  )}
+                  <Text style={styles.goalPercentage}>
+                    {getProgressPercentage(goal)}%
+                  </Text>
+                </View>
               </View>
             </View>
           ))
@@ -553,6 +600,24 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     flex: 1,
   },
+  goalActions: {
+    flexDirection: 'row',
+    gap: 5,
+  },
+  completeButton: {
+    padding: 5,
+    backgroundColor: '#4CAF50',
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  completeButtonText: {
+    fontSize: 18,
+    color: '#fff',
+    fontWeight: 'bold',
+  },
   deleteButton: {
     padding: 5,
   },
@@ -587,12 +652,27 @@ const styles = StyleSheet.create({
   goalFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginTop: 10,
   },
   goalFrequency: {
     fontSize: 12,
     color: '#999',
     textTransform: 'capitalize',
+  },
+  goalStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  completedBadge: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+    backgroundColor: '#e8f5e9',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
   },
   goalPercentage: {
     fontSize: 14,

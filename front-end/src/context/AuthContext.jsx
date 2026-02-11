@@ -32,9 +32,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (email, password, fullName, additionalData) => {
-    const userData = await authService.register(email, password, fullName, additionalData);
-    setUser(userData);
-    return userData;
+    console.log('AuthContext - Iniciando register');
+    const result = await authService.register(email, password, fullName, additionalData);
+    console.log('AuthContext - Registro exitoso:', result);
+    // No establecer usuario aquí - el usuario debe hacer login después
+    return result;
   };
 
   const logout = async () => {
@@ -43,7 +45,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateUserProfile = async (userId, userData) => {
+    console.log('AuthContext - updateUserProfile - userId:', userId);
+    console.log('AuthContext - updateUserProfile - userData:', userData);
+    console.log('AuthContext - user actual en contexto:', user);
     const updatedUser = await authService.updateUser(userId, userData);
+    console.log('AuthContext - updatedUser recibido:', updatedUser);
     setUser(updatedUser);
     return updatedUser;
   };

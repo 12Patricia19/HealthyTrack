@@ -29,6 +29,16 @@ class GlobalExceptionHandler {
         )
     }
 
+    @ExceptionHandler(IllegalArgumentException::class)
+    fun handleIllegalArgumentException(
+        ex: IllegalArgumentException
+    ): ResponseEntity<ErrorResponse> {
+        return ResponseEntity(
+            ErrorResponse(ex.message ?: "Solicitud inválida"),
+            HttpStatus.BAD_REQUEST
+        )
+    }
+
     @ExceptionHandler(Exception::class)
     fun handleGenericException(
         ex: Exception

@@ -1,5 +1,6 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const getApiUrl = () => {
   if (Constants.expoConfig?.extra?.apiUrl) {
@@ -30,12 +31,21 @@ class ApiClient {
 
   async request(method, path, data = null) {
     const url = this.baseURL + path;
+    
+    // Obtener userId de AsyncStorage
+    const userId = await AsyncStorage.getItem('userId');
+    
     const options = {
       method,
       headers: {
         'Content-Type': 'application/json',
       },
     };
+    
+    // Agregar userId en el header si existe
+    if (userId) {
+      options.headers['X-User-Id'] = userId;
+    }
 
     if (data) {
       options.body = JSON.stringify(data);

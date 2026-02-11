@@ -36,4 +36,8 @@ class GoalController(
         goalService.delete(id)
         return ResponseEntity.noContent().build()
     }
+
+    @PatchMapping("/{id}/complete")
+    fun completeGoal(@PathVariable userId: Long, @PathVariable id: Long): ResponseEntity<GoalResponse> =
+        ResponseEntity.ok(goalService.completeGoal(id))
 }
