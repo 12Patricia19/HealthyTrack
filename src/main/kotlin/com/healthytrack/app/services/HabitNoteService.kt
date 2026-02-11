@@ -42,7 +42,9 @@ class HabitNoteService(
         val updated = existing.copy(
             dailyHabit = dailyHabit,
             note = request.note
-        )
+        ).apply {
+            this.id = existing.id
+        }
         val saved = habitNoteRepository.save(updated)
         return habitNoteMapper.toResponse(saved)
     }
